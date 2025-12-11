@@ -212,7 +212,7 @@
       }));
 
       populateVendors();
-      applyFilter();
+      applyFilter();   // 這裡會順便算出第一次統計
 
     } catch (err) {
       alert("讀取 inventory.json 失敗，請確認檔案存在！");
@@ -238,26 +238,31 @@
 
   /* ===============================
      套用搜尋 / 篩選條件
+     - viewData：用來畫表格（可能有「只顯示需採購」）
+     - 統計：一律用「廠商 + 關鍵字」篩完的全部資料
   =============================== */
   function applyFilter() {
     const vendor = document.getElementById("vendorSelect").value;
     const keyword = document.getElementById("searchInput").value.trim();
     const needOnly = document.getElementById("needBuyOnly").checked;
 
-    viewData = rawData.filter(item => {
+    // 先依 廠商 + 關鍵字 篩一次，這批資料拿來做統計
+    const baseData = rawData.filter(item => {
       const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
       const matchKeyword = keyword ?
         (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
-      const matchNeed = needOnly ? item.需採購 : true;
-      return matchVendor && matchKeyword && matchNeed;
+      return matchVendor && matchKeyword;
     });
 
+    // 再看要不要「只顯示需採購」來決定畫在表格上的 viewData
+    viewData = needOnly ? baseData.filter(item => item.需採購) : baseData;
+
     renderTable();
-    updateStats();
+    updateStats(baseData);
   }
 
   /* ===============================
-     渲染表格
+     渲染表格（使用全域 viewData）
   =============================== */
   function renderTable() {
     const tbody = document.getElementById("drugBody");
@@ -281,7 +286,9 @@
         item.庫存量 = v;
         item.需採購 = v != null && item.累計用量 > v;
         updateRowStatus(tr, item);
-        updateStats();
+
+        // 只更新統計 & 圖表，表格本身不重畫，避免輸入焦點被打斷
+        updateStatsByCurrentFilter();
       });
 
       tbody.appendChild(tr);
@@ -305,16 +312,35 @@
   }
 
   /* ===============================
-     統計與圓餅圖
+     依目前畫面上的「廠商 + 關鍵字」重新計算統計
+     （給輸入庫存時呼叫）
   =============================== */
-  function updateStats() {
-    const total = viewData.length;
-    const need = viewData.filter(x => x.庫存量 != null && x.需採購).length;
-    const ok   = viewData.filter(x => x.庫存量 != null && !x.需採購).length;
+  function updateStatsByCurrentFilter() {
+    const vendor = document.getElementById("vendorSelect").value;
+    const keyword = document.getElementById("searchInput").value.trim();
 
-    document.getElementById("totalCount").textContent = `共 ${total} 筆`;
+    const baseData = rawData.filter(item => {
+      const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
+      const matchKeyword = keyword ?
+        (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
+      return matchVendor && matchKeyword;
+    });
+
+    updateStats(baseData);
+  }
+
+  /* ===============================
+     統計與圓餅圖
+     baseData：已依 廠商 + 關鍵字 篩過
+  =============================== */
+  function updateStats(baseData) {
+    const total = baseData.length;
+    const need  = baseData.filter(x => x.庫存量 != null && x.需採購).length;
+    const ok    = baseData.filter(x => x.庫存量 != null && !x.需採購).length;
+
+    document.getElementById("totalCount").textContent   = `共 ${total} 筆`;
     document.getElementById("needBuyCount").textContent = `需採購 ${need} 筆`;
-    document.getElementById("okCount").textContent = `庫存足夠 ${ok} 筆`;
+    document.getElementById("okCount").textContent      = `庫存足夠 ${ok} 筆`;
 
     const ctx = document.getElementById("chart").getContext("2d");
 
