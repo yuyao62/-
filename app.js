@@ -1,18 +1,15 @@
 let inventoryData = [];
 let chartInstance = null;
 
-// 載入 JSON 資料
 fetch("中國_盤點結果_20251211_121418.json")
   .then(response => response.json())
   .then(data => {
     inventoryData = data;
-    console.log("資料載入完成", inventoryData);
     populateVendorOptions();
-    searchDrug(); // 初始顯示
+    searchDrug();
   })
   .catch(error => console.error("載入 JSON 失敗:", error));
 
-// 自動載入廠商選單
 function populateVendorOptions() {
   const vendorSet = new Set();
   inventoryData.forEach(item => {
@@ -29,7 +26,6 @@ function populateVendorOptions() {
   });
 }
 
-// 查詢藥品
 function searchDrug() {
   const keyword = document.getElementById("searchInput").value.trim();
   const selectedVendor = document.getElementById("vendorSelect").value;
@@ -51,11 +47,13 @@ function searchDrug() {
   });
 
   results.forEach(item => {
+    const vendor = item["廠商"] || item["vendor"] || "";
     const code = item["藥品代碼"] || item["code"] || "";
     const name = item["藥品名稱"] || item["name"] || "";
     const qty = item["盤點數量"] || item["qty"] || 0;
 
     const row = `<tr>
+      <td>${vendor}</td>
       <td>${code}</td>
       <td>${name}</td>
       <td>${qty}</td>
@@ -67,7 +65,6 @@ function searchDrug() {
   updateStats(results);
 }
 
-// 重置查詢
 function resetSearch() {
   document.getElementById("searchInput").value = "";
   document.getElementById("vendorSelect").value = "";
@@ -75,7 +72,6 @@ function resetSearch() {
   searchDrug();
 }
 
-// 更新統計摘要
 function updateStats(results) {
   const total = results.length;
   const outOfStock = results.filter(item => {
@@ -91,13 +87,10 @@ function updateStats(results) {
   drawChart(total, outOfStock);
 }
 
-// 繪製 Chart.js 圓餅圖
 function drawChart(total, outOfStock) {
   const ctx = document.getElementById("chart").getContext("2d");
 
-  if (chartInstance) {
-    chartInstance.destroy();
-  }
+  if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(ctx, {
     type: "pie",
@@ -111,13 +104,8 @@ function drawChart(total, outOfStock) {
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          position: "bottom"
-        },
-        title: {
-          display: true,
-          text: "缺貨比例"
-        }
+        legend: { position: "bottom" },
+        title: { display: true, text: "缺貨比例" }
       }
     }
   });
