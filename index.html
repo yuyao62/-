@@ -1,187 +1,347 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>盤點查詢器</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>藥品採購小幫手</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Chart.js 用於畫圓餅圖 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #eef1f7;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      width: min(1100px, 100%);
+      background: white;
+      margin: 20px;
+      border-radius: 20px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+      padding: 24px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+    }
+    select, input[type="text"], input[type="number"] {
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 8px 14px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 1px rgba(79,70,229,0.4);
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 18px;
+      background: #4f46e5;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    .pill {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .pill-total {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+    .pill-buy {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .pill-ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .table-wrap {
+      margin-top: 10px;
+      max-height: 500px;
+      overflow: auto;
+      border-radius: 12px;
+      background: #f9fafb;
+      padding: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px 6px;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    tr:nth-child(even) td {
+      background: #f3f4f6;
+    }
+    .status-tag {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .status-empty {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .status-buy {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .status-ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>盤點查詢器</h1>
+<div class="app">
+  <h1>藥品採購小幫手</h1>
+  <div class="subtitle">讀取 Excel → inventory.json → 出現藥品列表 → 手動輸入庫存量 → 自動判斷是否需採購</div>
 
-  <!-- 廠商選擇 -->
-  <div class="vendor-section">
-    <label for="vendorSelect">輸入或選擇廠商：</label>
+  <!-- 控制列 -->
+  <div class="row">
+    <label for="vendorSelect">廠商：</label>
     <select id="vendorSelect">
-      <option value="">請選擇</option>
-    </select>
-  </div>
-
-  <!-- 查詢區 -->
-  <div class="search-section">
-    <label for="searchInput">輸入藥品名稱或代碼：</label>
-    <input type="text" id="searchInput" placeholder="輸入後按 Enter 或『查詢』">
-    <button onclick="searchDrug()">查詢</button>
-    <button onclick="resetSearch()">重置</button>
-  </div>
-
-  <!-- 篩選區 -->
-  <div class="filter-section">
-    <label for="dateSelect">盤點日期：</label>
-    <select id="dateSelect">
-      <option value="2025-12-11">2025/12/11</option>
+      <option value="">全部廠商</option>
     </select>
 
-    <label>
-      <input type="checkbox" id="outOfStockFilter"> 只顯示缺貨品項
+    <label for="searchInput">搜尋：</label>
+    <input type="text" id="searchInput" placeholder="輸入藥品代碼或名稱">
+
+    <button id="searchBtn">查詢</button>
+    <button id="resetBtn">重置</button>
+
+    <label style="margin-left:auto;">
+      <input type="checkbox" id="needBuyOnly">
+      只顯示需採購
     </label>
   </div>
 
-  <!-- 查詢結果 -->
-  <div id="resultSection">
-    <h2>查詢結果</h2>
-    <table id="resultTable">
+  <!-- 統計列 -->
+  <div class="row">
+    <span class="pill pill-total" id="totalCount">共 0 筆</span>
+    <span class="pill pill-buy" id="needBuyCount">需採購 0 筆</span>
+    <span class="pill pill-ok" id="okCount">庫存足夠 0 筆</span>
+  </div>
+
+  <!-- 表格 -->
+  <div class="table-wrap">
+    <table>
       <thead>
-        <tr>
-          <th>廠商</th>
-          <th>藥品代碼</th>
-          <th>藥品名稱</th>
-          <th>盤點數量</th>
-          <th>狀態</th>
-        </tr>
+      <tr>
+        <th>廠商</th>
+        <th>藥代</th>
+        <th>藥品名稱</th>
+        <th>累計用量</th>
+        <th>庫存量（輸入）</th>
+        <th>狀態</th>
+      </tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="drugBody"></tbody>
     </table>
   </div>
 
-  <!-- 統計摘要 -->
-  <div id="statsSection">
-    <h2>統計摘要</h2>
-    <p>總盤點藥品數：<span id="totalCount">0</span></p>
-    <p>缺貨品項數：<span id="outOfStockCount">0</span></p>
-    <p>缺貨比例：<span id="outOfStockRate">0%</span></p>
-    <canvas id="chart" width="400" height="400"></canvas>
+  <!-- 圓餅圖 -->
+  <div style="margin-top:20px;">
+    <canvas id="chart" height="180"></canvas>
   </div>
+</div>
 
-  <script>
-    let inventoryData = [];
-    let chartInstance = null;
+<script>
+  let rawData = [];
+  let viewData = [];
+  let chartInstance = null;
 
-    // 請確認 JSON 檔案名稱正確，放在同一資料夾
-    fetch("合併後的.json")
-      .then(response => {
-        if (!response.ok) throw new Error("找不到 JSON 檔案");
-        return response.json();
-      })
-      .then(data => {
-        if (!Array.isArray(data)) throw new Error("JSON 格式錯誤，必須是陣列");
-        inventoryData = data;
-        console.log("載入成功:", data);
-        populateVendorOptions();
-        searchDrug();
-      })
-      .catch(error => console.error("載入 JSON 失敗:", error));
+  // 載入 JSON
+  async function loadData() {
+    try {
+      const resp = await fetch("inventory.json?_=" + Date.now());
+      const data = await resp.json();
 
-    function populateVendorOptions() {
-      const vendorSet = new Set();
-      inventoryData.forEach(item => {
-        const vendor = item["廠商"] || item["vendor"];
-        if (vendor) vendorSet.add(vendor);
+      rawData = data.map((item, idx) => ({
+        id: idx,
+        藥代: item["藥代"],
+        藥品: item["藥品"],
+        廠商: item["廠商"],
+        累計用量: Number(item["累計用量"]),
+        庫存量: null,
+        需採購: false
+      }));
+
+      populateVendors();
+      applyFilter();
+    } catch (err) {
+      alert("❌ 無法讀取 inventory.json");
+    }
+  }
+
+  // 填廠商下拉
+  function populateVendors() {
+    const vendorSet = new Set(rawData.map(x => x.廠商));
+    const sel = document.getElementById("vendorSelect");
+    vendorSet.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+
+  // 套用篩選 + 搜尋
+  function applyFilter() {
+    const vendor = document.getElementById("vendorSelect").value.trim();
+    const keyword = document.getElementById("searchInput").value.trim();
+    const needOnly = document.getElementById("needBuyOnly").checked;
+
+    viewData = rawData.filter(item => {
+      const v1 = vendor ? item.廠商 === vendor : true;
+      const v2 = keyword ? (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
+      const v3 = needOnly ? item.需採購 : true;
+      return v1 && v2 && v3;
+    });
+
+    renderTable();
+    updateStats();
+  }
+
+  // 畫表格
+  function renderTable() {
+    const tbody = document.getElementById("drugBody");
+    tbody.innerHTML = "";
+
+    viewData.forEach(item => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${item.廠商}</td>
+        <td>${item.藥代}</td>
+        <td>${item.藥品}</td>
+        <td>${item.累計用量}</td>
+        <td><input type="number" min="0" style="width:100%;" placeholder="輸入" value="${item.庫存量 ?? ""}"></td>
+        <td class="status-cell"></td>
+      `;
+
+      // 綁定庫存輸入事件
+      const input = tr.querySelector("input");
+      input.addEventListener("input", () => {
+        const val = input.value === "" ? null : Number(input.value);
+        item.庫存量 = val;
+        item.需採購 = val != null && item.累計用量 > val;
+        updateRowStatus(tr, item);
+        updateStats();
       });
 
-      const vendorSelect = document.getElementById("vendorSelect");
-      vendorSet.forEach(vendor => {
-        const option = document.createElement("option");
-        option.value = vendor;
-        option.textContent = vendor;
-        vendorSelect.appendChild(option);
-      });
+      tbody.appendChild(tr);
+      updateRowStatus(tr, item);
+    });
+  }
+
+  // 設定單列狀態
+  function updateRowStatus(tr, item) {
+    const td = tr.querySelector(".status-cell");
+
+    if (item.庫存量 == null) {
+      td.innerHTML = '<span class="status-tag status-empty">未輸入</span>';
+    } else if (item.需採購) {
+      td.innerHTML = '<span class="status-tag status-buy">需採購</span>';
+    } else {
+      td.innerHTML = '<span class="status-tag status-ok">庫存足夠</span>';
     }
+  }
 
-    function searchDrug() {
-      const keyword = document.getElementById("searchInput").value.trim();
-      const selectedVendor = document.getElementById("vendorSelect").value;
-      const outOfStockOnly = document.getElementById("outOfStockFilter").checked;
-      const tbody = document.querySelector("#resultTable tbody");
-      tbody.innerHTML = "";
+  // 更新統計與圓餅圖
+  function updateStats() {
+    const total = viewData.length;
+    const buy = viewData.filter(x => x.庫存量 != null && x.需採購).length;
+    const ok = viewData.filter(x => x.庫存量 != null && !x.需採購).length;
 
-      const results = inventoryData.filter(item => {
-        const code = item["藥品代碼"] || item["code"] || "";
-        const name = item["藥品名稱"] || item["name"] || "";
-        const vendor = item["廠商"] || item["vendor"] || "";
-        const qty = item["盤點數量"] || item["qty"] || 0;
+    document.getElementById("totalCount").textContent = `共 ${total} 筆`;
+    document.getElementById("needBuyCount").textContent = `需採購 ${buy} 筆`;
+    document.getElementById("okCount").textContent = `庫存足夠 ${ok} 筆`;
 
-        const matchVendor = selectedVendor ? vendor === selectedVendor : true;
-        const matchKeyword = keyword ? (code.includes(keyword) || name.includes(keyword)) : true;
-        const stockFilter = outOfStockOnly ? qty === 0 : true;
-
-        return matchVendor && matchKeyword && stockFilter;
-      });
-
-      results.forEach(item => {
-        const vendor = item["廠商"] || item["vendor"] || "";
-        const code = item["藥品代碼"] || item["code"] || "";
-        const name = item["藥品名稱"] || item["name"] || "";
-        const qty = item["盤點數量"] || item["qty"] || 0;
-
-        const row = `<tr>
-          <td>${vendor}</td>
-          <td>${code}</td>
-          <td>${name}</td>
-          <td>${qty}</td>
-          <td>${qty === 0 ? "缺貨" : "有庫存"}</td>
-        </tr>`;
-        tbody.innerHTML += row;
-      });
-
-      updateStats(results);
-    }
-
-    function resetSearch() {
-      document.getElementById("searchInput").value = "";
-      document.getElementById("vendorSelect").value = "";
-      document.getElementById("outOfStockFilter").checked = false;
-      searchDrug();
-    }
-
-    function updateStats(results) {
-      const total = results.length;
-      const outOfStock = results.filter(item => {
-        const qty = item["盤點數量"] || item["qty"] || 0;
-        return qty === 0;
-      }).length;
-      const rate = total > 0 ? Math.round((outOfStock / total) * 100) : 0;
-
-      document.getElementById("totalCount").textContent = total;
-      document.getElementById("outOfStockCount").textContent = outOfStock;
-      document.getElementById("outOfStockRate").textContent = rate + "%";
-
-      drawChart(total, outOfStock);
-    }
-
-    function drawChart(total, outOfStock) {
-      const ctx = document.getElementById("chart").getContext("2d");
-
-      if (chartInstance) chartInstance.destroy();
-
-      chartInstance = new Chart(ctx, {
-        type: "pie",
-        data: {
-          labels: ["有庫存", "缺貨"],
-          datasets: [{
-            data: [total - outOfStock, outOfStock],
-            backgroundColor: ["#2ecc71", "#e74c3c"]
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "bottom" },
-            title: { display: true, text: "缺貨比例" }
-          }
+    const ctx = document.getElementById("chart").getContext("2d");
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: ["需採購", "庫存足夠"],
+        datasets: [{
+          data: [buy, ok],
+          backgroundColor: ["#ef4444", "#10b981"]
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: "bottom" }
         }
-      });
-    }
-  </script>
+      }
+    });
+  }
+
+  // 綁定事件
+  document.getElementById("searchBtn").addEventListener("click", applyFilter);
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    document.getElementById("vendorSelect").value = "";
+    document.getElementById("searchInput").value = "";
+    document.getElementById("needBuyOnly").checked = false;
+    applyFilter();
+  });
+  document.getElementById("vendorSelect").addEventListener("change", applyFilter);
+  document.getElementById("searchInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") applyFilter();
+  });
+  document.getElementById("needBuyOnly").addEventListener("change", applyFilter);
+
+  loadData();
+</script>
+
 </body>
 </html>
