@@ -1,341 +1,61 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <title>藥品盤點系統</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- 讀 Excel 用的 SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    body {
-      margin: 0;
-      background: #f3f4f6;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      padding: 8px 20px;
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    header img {
-      width: 32px;
-      height: 32px;
-      margin-right: 8px;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-    }
-    .container {
-      padding: 16px 20px;
-    }
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .btn {
-      border: none;
-      border-radius: 4px;
-      padding: 8px 14px;
-      font-size: 14px;
-      cursor: pointer;
-      color: #fff;
-      background: #1d4ed8;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-secondary {
-      background: #6b7280;
-    }
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .info {
-      font-size: 13px;
-      color: #6b7280;
-    }
-    .error {
-      font-size: 13px;
-      color: #b91c1c;
-      margin-top: 4px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-    th, td {
-      border: 1px solid #e5e7eb;
-      padding: 8px;
-      text-align: left;
-      font-size: 14px;
-    }
-    th {
-      background: #f9fafb;
-      font-weight: 600;
-    }
-    .stock-input {
-      width: 100%;
-      padding: 4px 6px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-    .status-ok {
-      color: #15803d;
-      font-weight: 600;
-    }
-    .status-warn {
-      color: #b45309;
-      font-weight: 600;
-    }
-    .status-bad {
-      color: #b91c1c;
-      font-weight: 600;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>盤點查詢器</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <!-- 你可以改成自己的圖片 -->
-    <img src="https://cdn-icons-png.flaticon.com/512/2966/2966327.png" alt="factory" />
-    <h1>藥品盤點系統</h1>
-  </header>
+  <h1>盤點查詢器</h1>
 
-  <div class="container">
-    <div class="toolbar">
-      <!-- 隱藏的檔案 input，用按鈕觸發 -->
-      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" />
-      <button class="btn" id="uploadBtn">📂 上傳 Excel</button>
+  <!-- 查詢區 -->
+  <div class="search-section">
+    <label for="searchInput">輸入藥品名稱或代碼：</label>
+    <input type="text" id="searchInput" placeholder="輸入後按 Enter 或『查詢』">
+    <button onclick="searchDrug()">查詢</button>
+    <button onclick="resetSearch()">重置</button>
+  </div>
 
-      <button class="btn btn-secondary" id="downloadBtn" disabled>📨 下載結果</button>
+  <!-- 篩選區 -->
+  <div class="filter-section">
+    <label for="dateSelect">盤點日期：</label>
+    <select id="dateSelect">
+      <option value="2025-12-11">2025/12/11</option>
+      <!-- 可動態載入更多日期 -->
+    </select>
 
-      <div class="info" id="fileInfo">請先上傳含有「藥品」、「累計數量/累計用量」欄位的 Excel。</div>
-    </div>
-    <div id="errorBox" class="error"></div>
+    <label>
+      <input type="checkbox" id="outOfStockFilter"> 只顯示缺貨品項
+    </label>
+  </div>
 
-    <table>
+  <!-- 結果區 -->
+  <div id="resultSection">
+    <h2>查詢結果</h2>
+    <table id="resultTable">
       <thead>
         <tr>
-          <th style="width: 40%;">藥品名稱</th>
-          <th style="width: 20%;">累計用量</th>
-          <th style="width: 20%;">庫存</th>
-          <th style="width: 20%;">狀態</th>
+          <th>藥品代碼</th>
+          <th>藥品名稱</th>
+          <th>盤點數量</th>
+          <th>狀態</th>
         </tr>
       </thead>
-      <tbody id="drugBody">
-        <tr><td colspan="4">尚未載入資料</td></tr>
+      <tbody>
+        <!-- 查詢結果會插入這裡 -->
       </tbody>
     </table>
   </div>
 
-  <script>
-    const uploadBtn = document.getElementById("uploadBtn");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const fileInput = document.getElementById("fileInput");
-    const fileInfo = document.getElementById("fileInfo");
-    const errorBox = document.getElementById("errorBox");
-    const drugBody = document.getElementById("drugBody");
+  <!-- 統計區 -->
+  <div id="statsSection">
+    <h2>統計摘要</h2>
+    <p>總盤點藥品數：<span id="totalCount">0</span></p>
+    <p>缺貨品項數：<span id="outOfStockCount">0</span></p>
+    <p>缺貨比例：<span id="outOfStockRate">0%</span></p>
+    <canvas id="chart"></canvas>
+  </div>
 
-    // 存目前表格的資料
-    let drugRows = [];
-
-    uploadBtn.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", handleFile);
-    downloadBtn.addEventListener("click", downloadCSV);
-
-    function handleFile(e) {
-      const file = e.target.files[0];
-      errorBox.textContent = "";
-      if (!file) {
-        fileInfo.textContent = "未選擇檔案";
-        return;
-      }
-      fileInfo.textContent = `已選擇檔案：${file.name}`;
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        try {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, { type: "array" });
-
-          const sheetName = workbook.Sheets["Sheet1"]
-            ? "Sheet1"
-            : workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          let rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-          if (!rows.length) {
-            throw new Error("工作表為空或欄位無法辨識");
-          }
-          processData(rows);
-        } catch (err) {
-          console.error(err);
-          errorBox.textContent = "解析 Excel 發生錯誤：" + err.message;
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function processData(rows) {
-      drugRows = [];
-
-      rows.forEach((row) => {
-        // 先把欄位名稱 trim
-        const cleaned = {};
-        for (const k in row) {
-          cleaned[k.trim()] = row[k];
-        }
-
-        // 取藥品名稱欄位（假設叫「藥品」或「藥品名稱」）
-        const name =
-          cleaned["藥品"] !== undefined
-            ? cleaned["藥品"]
-            : cleaned["藥品名稱"];
-
-        if (!name) return; // 沒藥品名就跳過
-
-        // 處理累計用量：可能叫「累計用量」或「累計數量」
-        let used =
-          cleaned["累計用量"] !== undefined
-            ? cleaned["累計用量"]
-            : cleaned["累計數量"];
-
-        let num = parseFloat(String(used).toString().replace(/,/g, ""));
-        if (isNaN(num)) num = 0;
-
-        drugRows.push({
-          name: String(name),
-          used: num,
-          stock: 0,
-          status: "",
-        });
-      });
-
-      renderTable();
-    }
-
-    function renderTable() {
-      if (!drugRows.length) {
-        drugBody.innerHTML = "<tr><td colspan='4'>沒有資料</td></tr>";
-        downloadBtn.disabled = true;
-        return;
-      }
-
-      drugBody.innerHTML = "";
-      drugRows.forEach((drug, idx) => {
-        const tr = document.createElement("tr");
-
-        const nameTd = document.createElement("td");
-        nameTd.textContent = drug.name;
-
-        const usedTd = document.createElement("td");
-        usedTd.textContent = drug.used.toFixed(1);
-
-        const stockTd = document.createElement("td");
-        const input = document.createElement("input");
-        input.type = "number";
-        input.min = "0";
-        input.step = "0.1";
-        input.value = drug.stock;
-        input.className = "stock-input";
-        input.addEventListener("input", () => {
-          const v = parseFloat(input.value);
-          drug.stock = isNaN(v) ? 0 : v;
-          updateStatus(drug, statusTd);
-        });
-        stockTd.appendChild(input);
-
-        const statusTd = document.createElement("td");
-        updateStatus(drug, statusTd);
-
-        tr.appendChild(nameTd);
-        tr.appendChild(usedTd);
-        tr.appendChild(stockTd);
-        tr.appendChild(statusTd);
-        drugBody.appendChild(tr);
-      });
-
-      downloadBtn.disabled = false;
-    }
-
-    // 根據 庫存 / 累計用量 給狀態
-    function updateStatus(drug, td) {
-      td.textContent = "";
-      td.className = "";
-
-      const used = drug.used;
-      const stock = drug.stock;
-
-      // 沒有歷史用量資料
-      if (used <= 0 && stock > 0) {
-        td.textContent = "🟢 有庫存（無歷史用量）";
-        td.classList.add("status-ok");
-        drug.status = td.textContent;
-        return;
-      }
-      if (used <= 0 && stock <= 0) {
-        td.textContent = "—";
-        drug.status = td.textContent;
-        return;
-      }
-
-      const ratio = stock / used;
-
-      if (ratio >= 1) {
-        td.textContent = "🟢 足夠";
-        td.classList.add("status-ok");
-      } else if (ratio >= 0.5) {
-        td.textContent = "🟡 即將不足";
-        td.classList.add("status-warn");
-      } else if (stock > 0) {
-        td.textContent = "🔴 庫存不足";
-        td.classList.add("status-bad");
-      } else {
-        td.textContent = "🔴 無庫存";
-        td.classList.add("status-bad");
-      }
-      drug.status = td.textContent;
-    }
-
-    // 下載結果成 CSV
-    function downloadCSV() {
-      if (!drugRows.length) return;
-
-      const header = ["藥品名稱", "累計用量", "庫存", "狀態"];
-      const lines = [header.join(",")];
-
-      drugRows.forEach((d) => {
-        const row = [
-          `"${d.name.replace(/"/g, '""')}"`,
-          d.used.toFixed(1),
-          d.stock,
-          `"${(d.status || "").replace(/"/g, '""')}"`,
-        ];
-        lines.push(row.join(","));
-      });
-
-      const csvContent = lines.join("\r\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "藥品盤點結果.csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
