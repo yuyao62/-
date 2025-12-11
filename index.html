@@ -2,10 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>藥品採購小幫手</title>
+  <title>藥品採購查詢系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Chart.js 用於畫圓餅圖 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -17,108 +16,100 @@
       margin: 0;
       padding: 0;
       background: #eef1f7;
-      min-height: 100vh;
       display: flex;
       justify-content: center;
+      min-height: 100vh;
     }
     .app {
       width: min(1100px, 100%);
       background: white;
       margin: 20px;
-      border-radius: 20px;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.12);
       padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
     }
     h1 {
       text-align: center;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     .subtitle {
       text-align: center;
-      font-size: 14px;
       color: #6b7280;
+      font-size: 14px;
       margin-bottom: 20px;
     }
+
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
       align-items: center;
+      gap: 12px;
       margin-bottom: 16px;
     }
     label {
-      font-size: 14px;
       font-weight: 600;
-      color: #374151;
     }
-    select, input[type="text"], input[type="number"] {
+
+    input, select {
+      padding: 8px 14px;
       border-radius: 999px;
       border: 1px solid #d1d5db;
-      padding: 8px 14px;
       font-size: 14px;
       outline: none;
     }
     input:focus, select:focus {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 1px rgba(79,70,229,0.4);
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.4);
     }
+
     button {
+      padding: 8px 18px;
       border-radius: 999px;
       border: none;
-      padding: 8px 18px;
       background: #4f46e5;
       color: white;
       font-weight: 600;
       cursor: pointer;
-      transition: 0.15s;
     }
     button:hover {
       background: #4338ca;
     }
+
     .pill {
       padding: 4px 12px;
       border-radius: 999px;
-      font-weight: 600;
       font-size: 13px;
+      font-weight: 600;
     }
-    .pill-total {
-      background: #dbeafe;
-      color: #1e3a8a;
-    }
-    .pill-buy {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-    .pill-ok {
-      background: #dcfce7;
-      color: #166534;
-    }
+    .pill-total { background: #dbeafe; color: #1e3a8a; }
+    .pill-buy { background: #fee2e2; color: #991b1b; }
+    .pill-ok  { background: #dcfce7; color: #166534; }
+
     .table-wrap {
-      margin-top: 10px;
-      max-height: 500px;
-      overflow: auto;
-      border-radius: 12px;
       background: #f9fafb;
       padding: 10px;
+      max-height: 520px;
+      overflow: auto;
+      border-radius: 12px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-    }
-    th, td {
-      padding: 8px 6px;
-      text-align: left;
       font-size: 13px;
     }
     th {
       background: #e5e7eb;
       position: sticky;
       top: 0;
-      z-index: 10;
+      padding: 8px;
+      font-weight: 700;
+      z-index: 5;
     }
-    tr:nth-child(even) td {
-      background: #f3f4f6;
+    td {
+      padding: 6px 8px;
     }
+    tr:nth-child(even) td { background: #f3f4f6; }
+
     .status-tag {
       padding: 4px 8px;
       border-radius: 999px;
@@ -126,35 +117,30 @@
       font-weight: 600;
       display: inline-block;
     }
-    .status-empty {
-      background: #e5e7eb;
-      color: #374151;
-    }
-    .status-buy {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-    .status-ok {
-      background: #dcfce7;
-      color: #166534;
+    .status-empty { background: #e5e7eb; color: #374151; }
+    .status-buy   { background: #fee2e2; color: #b91c1c; }
+    .status-ok    { background: #dcfce7; color: #166534; }
+
+    @media (max-width: 640px) {
+      table { font-size: 12px; }
     }
   </style>
 </head>
 
 <body>
 <div class="app">
-  <h1>藥品採購小幫手</h1>
-  <div class="subtitle">讀取 Excel → inventory.json → 出現藥品列表 → 手動輸入庫存量 → 自動判斷是否需採購</div>
+  <h1>藥品採購查詢系統</h1>
+  <div class="subtitle">依廠商前兩碼分類 · 支援藥代/品名搜尋 · 庫存輸入自動判定需採購</div>
 
-  <!-- 控制列 -->
+  <!-- 操作列 -->
   <div class="row">
-    <label for="vendorSelect">廠商：</label>
+    <label>廠商（前兩碼）：</label>
     <select id="vendorSelect">
-      <option value="">全部廠商</option>
+      <option value="">全部</option>
     </select>
 
-    <label for="searchInput">搜尋：</label>
-    <input type="text" id="searchInput" placeholder="輸入藥品代碼或名稱">
+    <label>搜尋：</label>
+    <input id="searchInput" type="text" placeholder="輸入藥代或品名">
 
     <button id="searchBtn">查詢</button>
     <button id="resetBtn">重置</button>
@@ -165,7 +151,7 @@
     </label>
   </div>
 
-  <!-- 統計列 -->
+  <!-- 統計 -->
   <div class="row">
     <span class="pill pill-total" id="totalCount">共 0 筆</span>
     <span class="pill pill-buy" id="needBuyCount">需採購 0 筆</span>
@@ -200,59 +186,79 @@
   let viewData = [];
   let chartInstance = null;
 
-  // 載入 JSON
+  /* ===============================
+     廠商前兩碼處理
+  =============================== */
+  function vendorPrefix(name) {
+    return name.trim().slice(0, 2);
+  }
+
+  /* ===============================
+     載入 JSON
+  =============================== */
   async function loadData() {
     try {
-      const resp = await fetch("inventory.json?_=" + Date.now());
+      const resp = await fetch("inventory.json");
       const data = await resp.json();
 
-      rawData = data.map((item, idx) => ({
+      rawData = data.map((x, idx) => ({
         id: idx,
-        藥代: item["藥代"],
-        藥品: item["藥品"],
-        廠商: item["廠商"],
-        累計用量: Number(item["累計用量"]),
+        廠商: x["廠商"],
+        藥代: x["藥代"],
+        藥品: x["藥品"],
+        累計用量: Number(x["累計用量"]),
         庫存量: null,
         需採購: false
       }));
 
       populateVendors();
       applyFilter();
+
     } catch (err) {
-      alert("❌ 無法讀取 inventory.json");
+      alert("讀取 inventory.json 失敗，請確認檔案存在！");
     }
   }
 
-  // 填廠商下拉
+  /* ===============================
+     產生廠商選單（前兩碼分類）
+  =============================== */
   function populateVendors() {
-    const vendorSet = new Set(rawData.map(x => x.廠商));
     const sel = document.getElementById("vendorSelect");
-    vendorSet.forEach(v => {
+    const set = new Set(rawData.map(item => vendorPrefix(item.廠商)));
+
+    sel.innerHTML = '<option value="">全部</option>';
+
+    [...set].sort().forEach(prefix => {
       const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
+      opt.value = prefix;
+      opt.textContent = prefix + "（前兩碼）";
       sel.appendChild(opt);
     });
   }
 
-  // 套用篩選 + 搜尋
+  /* ===============================
+     套用搜尋 / 篩選條件
+  =============================== */
   function applyFilter() {
-    const vendor = document.getElementById("vendorSelect").value.trim();
+    const vendor = document.getElementById("vendorSelect").value;
     const keyword = document.getElementById("searchInput").value.trim();
     const needOnly = document.getElementById("needBuyOnly").checked;
 
     viewData = rawData.filter(item => {
-      const v1 = vendor ? item.廠商 === vendor : true;
-      const v2 = keyword ? (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
-      const v3 = needOnly ? item.需採購 : true;
-      return v1 && v2 && v3;
+      const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
+      const matchKeyword = keyword ?
+        (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
+      const matchNeed = needOnly ? item.需採購 : true;
+      return matchVendor && matchKeyword && matchNeed;
     });
 
     renderTable();
     updateStats();
   }
 
-  // 畫表格
+  /* ===============================
+     渲染表格
+  =============================== */
   function renderTable() {
     const tbody = document.getElementById("drugBody");
     tbody.innerHTML = "";
@@ -265,16 +271,15 @@
         <td>${item.藥代}</td>
         <td>${item.藥品}</td>
         <td>${item.累計用量}</td>
-        <td><input type="number" min="0" style="width:100%;" placeholder="輸入" value="${item.庫存量 ?? ""}"></td>
+        <td><input type="number" min="0" style="width:100%;" value="${item.庫存量 ?? ""}" placeholder="輸入"></td>
         <td class="status-cell"></td>
       `;
 
-      // 綁定庫存輸入事件
       const input = tr.querySelector("input");
       input.addEventListener("input", () => {
-        const val = input.value === "" ? null : Number(input.value);
-        item.庫存量 = val;
-        item.需採購 = val != null && item.累計用量 > val;
+        const v = input.value === "" ? null : Number(input.value);
+        item.庫存量 = v;
+        item.需採購 = v != null && item.累計用量 > v;
         updateRowStatus(tr, item);
         updateStats();
       });
@@ -284,7 +289,9 @@
     });
   }
 
-  // 設定單列狀態
+  /* ===============================
+     更新單列狀態
+  =============================== */
   function updateRowStatus(tr, item) {
     const td = tr.querySelector(".status-cell");
 
@@ -297,24 +304,28 @@
     }
   }
 
-  // 更新統計與圓餅圖
+  /* ===============================
+     統計與圓餅圖
+  =============================== */
   function updateStats() {
     const total = viewData.length;
-    const buy = viewData.filter(x => x.庫存量 != null && x.需採購).length;
-    const ok = viewData.filter(x => x.庫存量 != null && !x.需採購).length;
+    const need = viewData.filter(x => x.庫存量 != null && x.需採購).length;
+    const ok   = viewData.filter(x => x.庫存量 != null && !x.需採購).length;
 
     document.getElementById("totalCount").textContent = `共 ${total} 筆`;
-    document.getElementById("needBuyCount").textContent = `需採購 ${buy} 筆`;
+    document.getElementById("needBuyCount").textContent = `需採購 ${need} 筆`;
     document.getElementById("okCount").textContent = `庫存足夠 ${ok} 筆`;
 
     const ctx = document.getElementById("chart").getContext("2d");
+
     if (chartInstance) chartInstance.destroy();
+
     chartInstance = new Chart(ctx, {
       type: "pie",
       data: {
         labels: ["需採購", "庫存足夠"],
         datasets: [{
-          data: [buy, ok],
+          data: [need, ok],
           backgroundColor: ["#ef4444", "#10b981"]
         }]
       },
@@ -326,7 +337,9 @@
     });
   }
 
-  // 綁定事件
+  /* ===============================
+     事件綁定
+  =============================== */
   document.getElementById("searchBtn").addEventListener("click", applyFilter);
   document.getElementById("resetBtn").addEventListener("click", () => {
     document.getElementById("vendorSelect").value = "";
@@ -334,6 +347,7 @@
     document.getElementById("needBuyOnly").checked = false;
     applyFilter();
   });
+
   document.getElementById("vendorSelect").addEventListener("change", applyFilter);
   document.getElementById("searchInput").addEventListener("keydown", e => {
     if (e.key === "Enter") applyFilter();
