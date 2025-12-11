@@ -1,33 +1,53 @@
-// 盤點查詢器 app.js
-
 let inventoryData = [];
+let chartInstance = null;
 
-// 載入 JSON 檔案（由 excel_to_json.py 轉換而來）
+// 載入 JSON 資料
 fetch("中國_盤點結果_20251211_121418.json")
   .then(response => response.json())
   .then(data => {
     inventoryData = data;
     console.log("資料載入完成", inventoryData);
+    populateVendorOptions();
     searchDrug(); // 初始顯示
   })
   .catch(error => console.error("載入 JSON 失敗:", error));
 
+// 自動載入廠商選單
+function populateVendorOptions() {
+  const vendorSet = new Set();
+  inventoryData.forEach(item => {
+    const vendor = item["廠商"] || item["vendor"];
+    if (vendor) vendorSet.add(vendor);
+  });
+
+  const vendorSelect = document.getElementById("vendorSelect");
+  vendorSet.forEach(vendor => {
+    const option = document.createElement("option");
+    option.value = vendor;
+    option.textContent = vendor;
+    vendorSelect.appendChild(option);
+  });
+}
+
 // 查詢藥品
 function searchDrug() {
   const keyword = document.getElementById("searchInput").value.trim();
+  const selectedVendor = document.getElementById("vendorSelect").value;
   const outOfStockOnly = document.getElementById("outOfStockFilter").checked;
   const tbody = document.querySelector("#resultTable tbody");
   tbody.innerHTML = "";
 
   const results = inventoryData.filter(item => {
-    // 偵測欄位名稱（可能是中文或英文）
     const code = item["藥品代碼"] || item["code"] || "";
     const name = item["藥品名稱"] || item["name"] || "";
+    const vendor = item["廠商"] || item["vendor"] || "";
     const qty = item["盤點數量"] || item["qty"] || 0;
 
-    const match = code.includes(keyword) || name.includes(keyword);
+    const matchVendor = selectedVendor ? vendor === selectedVendor : true;
+    const matchKeyword = code.includes(keyword) || name.includes(keyword);
     const stockFilter = outOfStockOnly ? qty === 0 : true;
-    return match && stockFilter;
+
+    return matchVendor && matchKeyword && stockFilter;
   });
 
   results.forEach(item => {
@@ -50,6 +70,7 @@ function searchDrug() {
 // 重置查詢
 function resetSearch() {
   document.getElementById("searchInput").value = "";
+  document.getElementById("vendorSelect").value = "";
   document.getElementById("outOfStockFilter").checked = false;
   searchDrug();
 }
@@ -70,8 +91,7 @@ function updateStats(results) {
   drawChart(total, outOfStock);
 }
 
-// 繪製 Chart.js 圖表
-let chartInstance = null;
+// 繪製 Chart.js 圓餅圖
 function drawChart(total, outOfStock) {
   const ctx = document.getElementById("chart").getContext("2d");
 
