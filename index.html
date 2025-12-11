@@ -70,9 +70,50 @@
       color: white;
       font-weight: 600;
       cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
     }
     button:hover {
       background: #4338ca;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15,23,42,0.3);
+    }
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    /* 🔴 緊急按鈕樣式：圓形 + 閃爍 */
+    .emergency-btn {
+      background: #dc2626;
+      border-radius: 999px;
+      min-width: 70px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      box-shadow: 0 0 0 0 rgba(220,38,38,0.6);
+      animation: pulse-emergency 1.4s infinite;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+    .emergency-btn:hover {
+      background: #b91c1c;
+    }
+
+    @keyframes pulse-emergency {
+      0% {
+        box-shadow: 0 0 0 0 rgba(220,38,38,0.6);
+        transform: scale(1);
+      }
+      70% {
+        box-shadow: 0 0 0 14px rgba(220,38,38,0);
+        transform: scale(1.05);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(220,38,38,0);
+        transform: scale(1);
+      }
     }
 
     .pill {
@@ -134,32 +175,19 @@
 
   <!-- 操作列 -->
   <div class="row">
-  <label>廠商（前兩碼）：</label>
-  <select id="vendorSelect">
-    <option value="">全部</option>
-  </select>
-
-  <label>搜尋：</label>
-  <input id="searchInput" type="text" placeholder="輸入藥代或品名">
-
-  <button id="searchBtn">查詢</button>
-  <button id="resetBtn">重置</button>
-
-  <!-- 🔥 新增緊急按鈕 -->
-  <button id="emergencyBtn" style="background:#dc2626;">緊急</button>
-
-  <label style="margin-left:auto;">
-    <input type="checkbox" id="needBuyOnly">
-    只顯示需採購
-  </label>
-</div>
-
+    <label>廠商（前兩碼）：</label>
+    <select id="vendorSelect">
+      <option value="">全部</option>
+    </select>
 
     <label>搜尋：</label>
     <input id="searchInput" type="text" placeholder="輸入藥代或品名">
 
     <button id="searchBtn">查詢</button>
     <button id="resetBtn">重置</button>
+
+    <!-- 🔴 緊急按鈕 -->
+    <button id="emergencyBtn" class="emergency-btn">緊急</button>
 
     <label style="margin-left:auto;">
       <input type="checkbox" id="needBuyOnly">
@@ -251,7 +279,7 @@
         需採購: false
       }));
 
-      // 🔥 在這裡進行「相同品項合併」
+      // 相同品項合併
       rawData = mergeSameItems(mapped);
 
       populateVendors();
@@ -281,10 +309,7 @@
   }
 
   /* ===============================
-     套用搜尋 / 篩選條件（新版）
-     - 支援藥代 / 藥品名稱搜尋（大小寫不分）
-     - 統計依 baseData（廠商＋關鍵字）
-     - 表格依 needOnly 顯示
+     套用搜尋 / 篩選條件
   =============================== */
   function applyFilter() {
     const vendor = document.getElementById("vendorSelect").value;
@@ -386,7 +411,6 @@
 
   /* ===============================
      統計與圓餅圖
-     baseData：已依 廠商 + 關鍵字 篩過
   =============================== */
   function updateStats(baseData) {
     const total = baseData.length;
@@ -434,6 +458,11 @@
     if (e.key === "Enter") applyFilter();
   });
   document.getElementById("needBuyOnly").addEventListener("change", applyFilter);
+
+  // 🔴 緊急按鈕事件
+  document.getElementById("emergencyBtn").addEventListener("click", () => {
+    alert("請洽店長");
+  });
 
   // 載入資料
   loadData();
