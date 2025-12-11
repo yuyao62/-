@@ -4,39 +4,32 @@
   <meta charset="UTF-8">
   <title>盤點查詢器</title>
   <link rel="stylesheet" href="style.css">
-  <!-- 引入 Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <h1>盤點查詢器</h1>
 
- <!-- 廠商選擇區 -->
-<div class="vendor-section">
-  <label for="vendorSelect">選擇廠商：</label>
-  <select id="vendorSelect">
-    <option value="">請選擇</option>
-    <option value="台灣大藥廠">台灣大藥廠</option>
-    <option value="信東製藥">信東製藥</option>
-    <option value="永信藥品">永信藥品</option>
-    <!-- 可動態載入更多廠商 -->
-  </select>
-</div>
+  <!-- 廠商選擇 -->
+  <div class="vendor-section">
+    <label for="vendorSelect">輸入或選擇廠商：</label>
+    <select id="vendorSelect">
+      <option value="">請選擇</option>
+    </select>
+  </div>
 
-<!-- 查詢區 -->
-<div class="search-section">
-  <label for="searchInput">輸入藥品名稱或代碼：</label>
-  <input type="text" id="searchInput" placeholder="輸入後按 Enter 或『查詢』">
-  <button onclick="searchDrug()">查詢</button>
-  <button onclick="resetSearch()">重置</button>
-</div>
-
+  <!-- 查詢區 -->
+  <div class="search-section">
+    <label for="searchInput">輸入藥品名稱或代碼：</label>
+    <input type="text" id="searchInput" placeholder="輸入後按 Enter 或『查詢』">
+    <button onclick="searchDrug()">查詢</button>
+    <button onclick="resetSearch()">重置</button>
+  </div>
 
   <!-- 篩選區 -->
   <div class="filter-section">
     <label for="dateSelect">盤點日期：</label>
     <select id="dateSelect">
       <option value="2025-12-11">2025/12/11</option>
-      <!-- 可動態載入更多日期 -->
     </select>
 
     <label>
@@ -44,25 +37,24 @@
     </label>
   </div>
 
-  <!-- 結果區 -->
+  <!-- 查詢結果 -->
   <div id="resultSection">
     <h2>查詢結果</h2>
     <table id="resultTable">
       <thead>
         <tr>
+          <th>廠商</th>
           <th>藥品代碼</th>
           <th>藥品名稱</th>
           <th>盤點數量</th>
           <th>狀態</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- 查詢結果會插入這裡 -->
-      </tbody>
+      <tbody></tbody>
     </table>
   </div>
 
-  <!-- 統計區 -->
+  <!-- 統計摘要 -->
   <div id="statsSection">
     <h2>統計摘要</h2>
     <p>總盤點藥品數：<span id="totalCount">0</span></p>
@@ -71,7 +63,6 @@
     <canvas id="chart" width="400" height="400"></canvas>
   </div>
 
-  <!-- 引入查詢邏輯 -->
   <script src="app.js"></script>
 </body>
 </html>
