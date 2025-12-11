@@ -82,7 +82,7 @@
       box-shadow: none;
     }
 
-    /* 🔴 緊急按鈕樣式：圓形 + 閃爍 */
+    /* 🔴 緊急按鈕樣式：圓形 + 輕微閃爍 */
     .emergency-btn {
       background: #dc2626;
       border-radius: 999px;
@@ -156,7 +156,6 @@
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
-      display: inline-block;
     }
     .status-empty { background: #e5e7eb; color: #374151; }
     .status-buy   { background: #fee2e2; color: #b91c1c; }
@@ -164,6 +163,73 @@
 
     @media (max-width: 640px) {
       table { font-size: 12px; }
+    }
+
+    /* ===========================
+       🔥 滿版緊急畫面（Modal）
+    =========================== */
+    .modal {
+      display: none;              /* 用 JS 控制顯示/隱藏 */
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at top, #7f1d1d 0, #111827 55%, #000 100%);
+      color: #f9fafb;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      animation: popIn 0.25s ease-out;
+    }
+    .modal-title {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 900;
+      margin-bottom: 16px;
+      text-shadow: 0 0 12px rgba(0,0,0,0.8);
+      letter-spacing: 4px;
+      color: #fecaca;  /* 淡紅 */
+    }
+    .modal-text {
+      font-size: clamp(40px, 9vw, 72px);
+      font-weight: 900;
+      margin-bottom: 30px;
+      text-shadow: 0 0 18px rgba(0,0,0,0.9);
+      color: #fef2f2;
+    }
+    .modal-sub {
+      font-size: clamp(16px, 3.2vw, 22px);
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+    .modal-close {
+      padding: 12px 26px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #111827;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    }
+    .modal-close:hover {
+      background: #d1d5db;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
     }
   </style>
 </head>
@@ -225,6 +291,16 @@
   </div>
 </div>
 
+<!-- 🔥 滿版緊急畫面 -->
+<div id="emergencyModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-title">⚠️ 緊急通知</div>
+    <div class="modal-text">請洽店長</div>
+    <div class="modal-sub">如有疑問或藥品短缺，請立即聯絡店長處理。</div>
+    <button id="closeModal" class="modal-close">我知道了</button>
+  </div>
+</div>
+
 <script>
   let rawData = [];
   let viewData = [];
@@ -252,18 +328,12 @@
     return Object.values(merged);
   }
 
-  /* ===============================
-     廠商前兩碼處理
-  =============================== */
+  /* 廠商前兩碼 */
   function vendorPrefix(name) {
     return name.trim().slice(0, 2);
   }
 
-  /* ===============================
-     載入 JSON
-     inventory.json 欄位需為：
-     廠商 / 藥代 / 藥品 / 月用量
-  =============================== */
+  /* 載入 JSON */
   async function loadData() {
     try {
       const resp = await fetch("inventory.json");
@@ -279,11 +349,10 @@
         需採購: false
       }));
 
-      // 相同品項合併
       rawData = mergeSameItems(mapped);
 
       populateVendors();
-      applyFilter();   // 初次渲染
+      applyFilter();
 
     } catch (err) {
       alert("讀取 inventory.json 失敗，請確認檔案存在且 JSON 格式正確！");
@@ -291,9 +360,7 @@
     }
   }
 
-  /* ===============================
-     產生廠商選單（前兩碼）
-  =============================== */
+  /* 廠商選單 */
   function populateVendors() {
     const sel = document.getElementById("vendorSelect");
     const set = new Set(rawData.map(item => vendorPrefix(item.廠商)));
@@ -308,15 +375,12 @@
     });
   }
 
-  /* ===============================
-     套用搜尋 / 篩選條件
-  =============================== */
+  /* 篩選 */
   function applyFilter() {
     const vendor = document.getElementById("vendorSelect").value;
     const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
     const needOnly = document.getElementById("needBuyOnly").checked;
 
-    // 先依 廠商 + 關鍵字 篩一次 → 作為統計基礎
     const baseData = rawData.filter(item => {
       const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
 
@@ -329,16 +393,13 @@
       return matchVendor && matchKeyword;
     });
 
-    // 表格顯示資料：是否套用「只顯示需採購」
     viewData = needOnly ? baseData.filter(item => item.需採購) : baseData;
 
     renderTable();
     updateStats(baseData);
   }
 
-  /* ===============================
-     渲染表格（使用全域 viewData）
-  =============================== */
+  /* 表格渲染 */
   function renderTable() {
     const tbody = document.getElementById("drugBody");
     tbody.innerHTML = "";
@@ -361,8 +422,6 @@
         item.庫存量 = v;
         item.需採購 = (v != null) && (item.月用量 > v);
         updateRowStatus(tr, item);
-
-        // 只更新統計 & 圖表，不重畫整張表，避免輸入被中斷
         updateStatsByCurrentFilter();
       });
 
@@ -371,9 +430,7 @@
     });
   }
 
-  /* ===============================
-     更新單列狀態 tag
-  =============================== */
+  /* 列狀態 */
   function updateRowStatus(tr, item) {
     const td = tr.querySelector(".status-cell");
 
@@ -386,10 +443,7 @@
     }
   }
 
-  /* ===============================
-     依目前（廠商 + 關鍵字）條件重新算統計
-     → 給「輸入庫存時」呼叫
-  =============================== */
+  /* 重新計算統計（輸入時用） */
   function updateStatsByCurrentFilter() {
     const vendor = document.getElementById("vendorSelect").value;
     const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
@@ -409,9 +463,7 @@
     updateStats(baseData);
   }
 
-  /* ===============================
-     統計與圓餅圖
-  =============================== */
+  /* 統計 & 圖 */
   function updateStats(baseData) {
     const total = baseData.length;
     const need  = baseData.filter(x => x.庫存量 != null && x.需採購).length;
@@ -442,9 +494,7 @@
     });
   }
 
-  /* ===============================
-     事件綁定
-  =============================== */
+  /* 事件綁定 */
   document.getElementById("searchBtn").addEventListener("click", applyFilter);
   document.getElementById("resetBtn").addEventListener("click", () => {
     document.getElementById("vendorSelect").value = "";
@@ -452,16 +502,27 @@
     document.getElementById("needBuyOnly").checked = false;
     applyFilter();
   });
-
   document.getElementById("vendorSelect").addEventListener("change", applyFilter);
   document.getElementById("searchInput").addEventListener("keydown", e => {
     if (e.key === "Enter") applyFilter();
   });
   document.getElementById("needBuyOnly").addEventListener("change", applyFilter);
 
-  // 🔴 緊急按鈕事件
+  // 🔴 緊急按鈕：顯示滿版畫面
   document.getElementById("emergencyBtn").addEventListener("click", () => {
-    alert("請洽店長");
+    document.getElementById("emergencyModal").style.display = "flex";
+  });
+
+  // 關閉滿版畫面
+  document.getElementById("closeModal").addEventListener("click", () => {
+    document.getElementById("emergencyModal").style.display = "none";
+  });
+
+  // 點滿版背景也可以關閉（非必要可刪）
+  document.getElementById("emergencyModal").addEventListener("click", (e) => {
+    if (e.target.id === "emergencyModal") {
+      document.getElementById("emergencyModal").style.display = "none";
+    }
   });
 
   // 載入資料
