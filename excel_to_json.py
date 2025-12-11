@@ -1,67 +1,29 @@
-mport os
-import json
 import pandas as pd
+import json
 
-# 你的 Excel 資料夾（你提供的路徑）
-FOLDER_PATH = r"D:\User\Desktop\purchase"
+# 你的 Excel
+excel_path = "藥品藥代廠商統計_醫令統計_數量_20251211_114629.xlsx"
+sheet_name = "Sheet1"
 
-# 輸出 JSON 檔案名稱
-OUTPUT_JSON = "merged.json"
+# 讀取 Excel
+df = pd.read_excel(excel_path, sheet_name=sheet_name, engine="openpyxl")
 
+# 整理欄位名稱
+df.columns = df.columns.str.strip()
 
-def read_all_excels(folder_path):
-    # 檢查資料夾是否存在
-    if not os.path.exists(folder_path):
-        print("❌ 路徑不存在：", folder_path)
-        return []
+# 你之前提過：把「累計數量」改成「累計用量」
+df.rename(columns={"累計數量": "累計用量"}, inplace=True)
 
-    # 找所有 Excel 檔案
-    excel_files = [
-        f for f in os.listdir(folder_path)
-        if f.lower().endswith(".xlsx") or f.lower().endswith(".xls")
-    ]
+# 修正資料
+df["累計用量"] = pd.to_numeric(df["累計用量"], errors="coerce").fillna(0)
+df["廠商"] = df["廠商"].fillna("未標示廠商")
+df["藥品"] = df["藥品"].fillna("")
+df["藥代"] = df["藥代"].fillna("")
 
-    if not excel_files:
-        print("❌ 沒找到任何 Excel (.xlsx/.xls)")
-        return []
+# 轉成 JSON 格式
+records = df[["藥代", "藥品", "廠商", "累計用量"]].to_dict(orient="records")
 
-    print("📄 找到 Excel：", excel_files)
+with open("inventory.json", "w", encoding="utf-8") as f:
+    json.dump(records, f, ensure_ascii=False, indent=2)
 
-    data = []
-
-    for filename in excel_files:
-        file_path = os.path.join(folder_path, filename)
-        print(f"📂 讀取：{file_path}")
-
-        try:
-            xls = pd.ExcelFile(file_path)  # 讀全部 sheet
-        except Exception as e:
-            print("⚠ 無法讀取：", file_path)
-            print("原因：", e)
-            continue
-
-        for sheet in xls.sheet_names:
-            df = pd.read_excel(file_path, sheet_name=sheet)
-            data.append({
-                "file": filename,
-                "sheet": sheet,
-                "rows": df.to_dict(orient="records")
-            })
-
-    return data
-
-
-def main():
-    all_data = read_all_excels(FOLDER_PATH)
-    if not all_data:
-        return  # 沒讀到資料則停止
-
-    with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-        json.dump(all_data, f, ensure_ascii=False, indent=2)
-
-    print("\n✔ 完成！已輸出：", OUTPUT_JSON)
-
-
-if __name__ == "__main__":
-    main()
-
+print("🎉 已成功輸出 inventory.json，共 {} 筆資料".format(len(records)))
