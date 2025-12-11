@@ -195,6 +195,8 @@
 
   /* ===============================
      載入 JSON
+     inventory.json 欄位需為：
+     廠商 / 藥代 / 藥品 / 累計用量
   =============================== */
   async function loadData() {
     try {
@@ -212,15 +214,16 @@
       }));
 
       populateVendors();
-      applyFilter();   // 這裡會順便算出第一次統計
+      applyFilter();   // 初次渲染
 
     } catch (err) {
-      alert("讀取 inventory.json 失敗，請確認檔案存在！");
+      alert("讀取 inventory.json 失敗，請確認檔案存在且 JSON 格式正確！");
+      console.error(err);
     }
   }
 
   /* ===============================
-     產生廠商選單（前兩碼分類）
+     產生廠商選單（前兩碼）
   =============================== */
   function populateVendors() {
     const sel = document.getElementById("vendorSelect");
@@ -237,24 +240,30 @@
   }
 
   /* ===============================
-     套用搜尋 / 篩選條件
-     - viewData：用來畫表格（可能有「只顯示需採購」）
-     - 統計：一律用「廠商 + 關鍵字」篩完的全部資料
+     套用搜尋 / 篩選條件（新版）
+     - 支援藥代 / 藥品名稱搜尋（大小寫不分）
+     - 統計依 baseData（廠商＋關鍵字）
+     - 表格依 needOnly 顯示
   =============================== */
   function applyFilter() {
     const vendor = document.getElementById("vendorSelect").value;
-    const keyword = document.getElementById("searchInput").value.trim();
+    const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
     const needOnly = document.getElementById("needBuyOnly").checked;
 
-    // 先依 廠商 + 關鍵字 篩一次，這批資料拿來做統計
+    // 先依 廠商 + 關鍵字 篩一次 → 作為統計基礎
     const baseData = rawData.filter(item => {
       const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
-      const matchKeyword = keyword ?
-        (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
+
+      const drugCode = (item.藥代 || "").toLowerCase();
+      const drugName = (item.藥品 || "").toLowerCase();
+      const matchKeyword = keyword
+        ? (drugCode.includes(keyword) || drugName.includes(keyword))
+        : true;
+
       return matchVendor && matchKeyword;
     });
 
-    // 再看要不要「只顯示需採購」來決定畫在表格上的 viewData
+    // 表格顯示資料：是否套用「只顯示需採購」
     viewData = needOnly ? baseData.filter(item => item.需採購) : baseData;
 
     renderTable();
@@ -284,10 +293,10 @@
       input.addEventListener("input", () => {
         const v = input.value === "" ? null : Number(input.value);
         item.庫存量 = v;
-        item.需採購 = v != null && item.累計用量 > v;
+        item.需採購 = (v != null) && (item.累計用量 > v);
         updateRowStatus(tr, item);
 
-        // 只更新統計 & 圖表，表格本身不重畫，避免輸入焦點被打斷
+        // 只更新統計 & 圖表，不重畫整張表，避免輸入被中斷
         updateStatsByCurrentFilter();
       });
 
@@ -297,7 +306,7 @@
   }
 
   /* ===============================
-     更新單列狀態
+     更新單列狀態 tag
   =============================== */
   function updateRowStatus(tr, item) {
     const td = tr.querySelector(".status-cell");
@@ -312,17 +321,22 @@
   }
 
   /* ===============================
-     依目前畫面上的「廠商 + 關鍵字」重新計算統計
-     （給輸入庫存時呼叫）
+     依目前（廠商 + 關鍵字）條件重新算統計
+     → 給「輸入庫存時」呼叫
   =============================== */
   function updateStatsByCurrentFilter() {
     const vendor = document.getElementById("vendorSelect").value;
-    const keyword = document.getElementById("searchInput").value.trim();
+    const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
 
     const baseData = rawData.filter(item => {
       const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
-      const matchKeyword = keyword ?
-        (item.藥代.includes(keyword) || item.藥品.includes(keyword)) : true;
+
+      const drugCode = (item.藥代 || "").toLowerCase();
+      const drugName = (item.藥品 || "").toLowerCase();
+      const matchKeyword = keyword
+        ? (drugCode.includes(keyword) || drugName.includes(keyword))
+        : true;
+
       return matchVendor && matchKeyword;
     });
 
@@ -380,6 +394,7 @@
   });
   document.getElementById("needBuyOnly").addEventListener("change", applyFilter);
 
+  // 載入資料
   loadData();
 </script>
 
