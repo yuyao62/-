@@ -14,12 +14,12 @@
     .subtitle { text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 20px; }
 
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
-    label { font-weight: 600; }
+    label { font-weight: 700; }
 
     input, select { padding: 8px 14px; border-radius: 999px; border: 1px solid #d1d5db; font-size: 14px; outline: none; }
     input:focus, select:focus { border-color: #6366f1; box-shadow: 0 0 0 1px rgba(99,102,241,0.4); }
 
-    button { padding: 8px 18px; border-radius: 999px; border: none; background: #4f46e5; color: white; font-weight: 700; cursor: pointer; transition: transform .1s ease, box-shadow .1s ease, background .15s ease; }
+    button { padding: 8px 18px; border-radius: 999px; border: none; background: #4f46e5; color: white; font-weight: 800; cursor: pointer; transition: transform .1s ease, box-shadow .1s ease, background .15s ease; }
     button:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,0.3); }
     button:active { transform: translateY(0); box-shadow: none; }
 
@@ -44,19 +44,19 @@
       100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); transform: scale(1); }
     }
 
-    .pill { padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .pill { padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 800; }
     .pill-total { background: #dbeafe; color: #1e3a8a; }
     .pill-buy { background: #fee2e2; color: #991b1b; }
     .pill-ok  { background: #dcfce7; color: #166534; }
 
     .table-wrap { background: #f9fafb; padding: 10px; max-height: 520px; overflow: auto; border-radius: 12px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: #e5e7eb; position: sticky; top: 0; padding: 8px; font-weight: 800; z-index: 5; }
+    th { background: #e5e7eb; position: sticky; top: 0; padding: 8px; font-weight: 900; z-index: 5; }
     td { padding: 6px 8px; }
     tr:nth-child(even) td { background: #f3f4f6; }
     @media (max-width: 640px) { table { font-size: 12px; } }
 
-    .status-tag { padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .status-tag { padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 900; }
     .status-empty { background: #e5e7eb; color: #374151; }
     .status-buy   { background: #fee2e2; color: #b91c1c; }
     .status-ok    { background: #dcfce7; color: #166534; }
@@ -102,7 +102,7 @@
     .modal-close{
       padding:12px 26px; border-radius:999px;
       background:#e5e7eb; color:#111827; border:none;
-      font-size:18px; cursor:pointer; font-weight:800;
+      font-size:18px; cursor:pointer; font-weight:900;
       box-shadow: 0 12px 30px rgba(0,0,0,.45);
     }
     .modal-close:hover{ background:#d1d5db; }
@@ -190,17 +190,17 @@
   const searchInput = $("searchInput");
   const autocompleteBox = $("autocompleteBox");
 
-  // ======= Utils =======
   const isEngStart = (s) => /^[A-Za-z]/.test(String(s || "").trim());
   const hasChinese = (s) => /[\u4e00-\u9fff]/.test(String(s || "").trim());
 
-  // ✅ 廠商代碼：中文前2 / 英文前5（統一大寫）
+  // ✅ 下拉用：中文前2碼 / 英文前5碼（統一大寫）
   function vendorKey(name) {
     const s = String(name ?? "").trim();
     if (!s) return "";
     return (isEngStart(s) ? s.slice(0, 5) : s.slice(0, 2)).toUpperCase();
   }
 
+  // 合併相同品項（同廠商/藥代/藥品，月用量加總）
   function mergeSameItems(list) {
     const merged = {};
     for (const item of list) {
@@ -211,6 +211,7 @@
     return Object.values(merged);
   }
 
+  // 搜尋：藥代前5碼
   function matchDrugCodePrefix5(drugCode, keyword) {
     if (!keyword) return false;
     const code = String(drugCode ?? "").trim().toUpperCase();
@@ -218,7 +219,7 @@
     return key && code.startsWith(key);
   }
 
-  // ✅ 搜尋框對廠商：中文前2 / 英文前5
+  // ✅ 搜尋：廠商（中文前2碼 / 英文前5碼）
   function matchVendorSmart(vendorName, keyword) {
     if (!keyword) return false;
     const vendor = String(vendorName ?? "").trim();
@@ -239,8 +240,6 @@
     if (!kw) return (autocompleteBox.style.display = "none");
 
     let vendors = getUniqueVendors().filter(v => matchVendorSmart(v, kw));
-
-    // ⭐ 常用置頂
     vendors.sort((a, b) => Number(FAVORITE_VENDORS.includes(b)) - Number(FAVORITE_VENDORS.includes(a)));
     vendors = vendors.slice(0, 12);
 
@@ -265,11 +264,9 @@
 
       autocompleteBox.appendChild(div);
     }
-
     autocompleteBox.style.display = "block";
   }
 
-  // ======= Data & UI =======
   async function loadData() {
     try {
       const resp = await fetch("inventory.json");
@@ -301,12 +298,13 @@
     [...keys].filter(Boolean).sort().forEach(key => {
       const opt = document.createElement("option");
       opt.value = key;
+      // ✅ 這裡就是你要的：英文顯示「前5碼」、中文顯示「前2碼」
       opt.textContent = /^[A-Z]/.test(key) ? `${key}（英文前5碼）` : `${key}（中文前2碼）`;
       vendorSelect.appendChild(opt);
     });
   }
 
-  // ✅ 統一的「先篩選」函式（applyFilter / 統計都用它）
+  // ✅ 統一一支篩選（applyFilter / 更新統計都用它）
   function getBaseFilteredData() {
     const vendor = vendorSelect.value;
     const kw = searchInput.value.trim();
@@ -343,7 +341,6 @@
 
     for (const item of viewData) {
       const tr = document.createElement("tr");
-
       tr.innerHTML = `
         <td>${item.廠商}</td>
         <td>${item.藥代}</td>
@@ -359,7 +356,7 @@
         item.庫存量 = v;
         item.需採購 = (v != null) && (item.月用量 > v);
         updateRowStatus(tr, item);
-        updateStats(getBaseFilteredData()); // 不重跑 table，只更新統計/圖
+        updateStats(getBaseFilteredData());
       });
 
       tbody.appendChild(tr);
@@ -385,6 +382,7 @@
 
     const ctx = $("chart").getContext("2d");
     if (chartInstance) chartInstance.destroy();
+
     chartInstance = new Chart(ctx, {
       type: "pie",
       data: {
@@ -398,7 +396,7 @@
     });
   }
 
-  // ======= Events =======
+  // ====== Events ======
   $("searchBtn").addEventListener("click", applyFilter);
   $("resetBtn").addEventListener("click", () => {
     vendorSelect.value = "";
