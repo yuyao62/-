@@ -70,6 +70,36 @@
       .stock-input { font-size: 18px; padding: 10px 16px; height: 44px; }
     }
 
+    /* 🔽 自動完成下拉（定位於搜尋框容器） */
+    .autocomplete-box {
+      position: absolute;
+      left: 0;
+      top: calc(100% + 6px);
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 999;
+      display: none;
+      border: 1px solid #e5e7eb;
+    }
+    .autocomplete-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .autocomplete-item:hover { background: #eef2ff; }
+    .autocomplete-type { font-size: 12px; font-weight: 800; color: #4338ca; }
+    .autocomplete-star { color: #f59e0b; font-weight: 900; }
+
+    /* ===========================
+       🔥 滿版緊急畫面（Modal）
+    =========================== */
     .modal {
       display: none;
       position: fixed;
@@ -130,7 +160,10 @@
 <body>
 <div class="app">
   <h1>藥品採購查詢系統</h1>
-  <div class="subtitle">依廠商前兩碼分類 · 搜尋：中文廠商前2碼 / 英文廠商前5碼 · 藥代前5碼 · 藥名包含 · 庫存輸入自動判定需採購</div>
+  <div class="subtitle">
+    依廠商前兩碼分類 · 搜尋框自動判斷：
+    中文廠商前2碼、英文廠商前5碼 · 藥代前5碼 · 藥名包含 · 點廠商建議可直接查詢
+  </div>
 
   <div class="row">
     <label>廠商（前兩碼）：</label>
@@ -139,7 +172,13 @@
     </select>
 
     <label>搜尋：</label>
-    <input id="searchInput" type="text" placeholder="輸入：藥代前5碼 / 廠商(中文2碼、英文5碼) / 藥名">
+
+    <!-- ✅ 搜尋框 + 自動完成容器（一定要 position:relative） -->
+    <div style="position:relative; flex: 1; min-width: 260px;">
+      <input id="searchInput" type="text" style="width:100%;"
+             placeholder="輸入：藥代前5碼 / 廠商(中文2碼、英文5碼) / 藥名">
+      <div id="autocompleteBox" class="autocomplete-box"></div>
+    </div>
 
     <button id="searchBtn">查詢</button>
     <button id="resetBtn">重置</button>
@@ -193,6 +232,16 @@
   let viewData = [];
   let chartInstance = null;
 
+  // ⭐ 常用廠商（自行填入常用清單，會置頂）
+  const FAVORITE_VENDORS = [
+    "3M HEALTH CARE LIMITED",
+    "中國化學製藥股份有限公司",
+    "永信藥品工業股份有限公司"
+  ];
+
+  const autocompleteBox = document.getElementById("autocompleteBox");
+  const searchInput = document.getElementById("searchInput");
+
   function mergeSameItems(list) {
     const merged = {};
     list.forEach(item => {
@@ -207,7 +256,7 @@
     return Object.values(merged);
   }
 
-  /* 廠商前兩碼（✅ 統一大寫，避免 AS / As 重複） */
+  /* 廠商前兩碼（下拉用，統一大寫避免重複） */
   function vendorPrefix(name) {
     return String(name ?? "").trim().slice(0, 2).toUpperCase();
   }
@@ -222,7 +271,7 @@
 
   /* ✅ 廠商搜尋：中文前2碼 / 英文前5碼 */
   function matchVendorSmart(vendorName, keyword) {
-    if (!keyword) return true;
+    if (!keyword) return false;
 
     const vendor = String(vendorName ?? "").trim();
     const key = String(keyword ?? "").trim();
@@ -230,12 +279,62 @@
     const hasChinese = /[\u4e00-\u9fff]/.test(key);
 
     if (hasChinese) {
-      // 中文：前2碼（不轉大小寫）
       return vendor.startsWith(key.slice(0, 2));
     } else {
-      // 英文/數字：前5碼（不分大小寫）
       return vendor.toUpperCase().startsWith(key.toUpperCase().slice(0, 5));
     }
+  }
+
+  function getUniqueVendors() {
+    return [...new Set(rawData.map(x => x.廠商))];
+  }
+
+  function showVendorAutocomplete(keyword) {
+    autocompleteBox.innerHTML = "";
+
+    if (!keyword) {
+      autocompleteBox.style.display = "none";
+      return;
+    }
+
+    let vendors = getUniqueVendors().filter(v => matchVendorSmart(v, keyword));
+
+    // ⭐ 常用廠商置頂
+    vendors.sort((a, b) => {
+      const aFav = FAVORITE_VENDORS.includes(a);
+      const bFav = FAVORITE_VENDORS.includes(b);
+      return (bFav === true) - (aFav === true);
+    });
+
+    vendors = vendors.slice(0, 12);
+
+    if (vendors.length === 0) {
+      autocompleteBox.style.display = "none";
+      return;
+    }
+
+    vendors.forEach(vendor => {
+      const div = document.createElement("div");
+      div.className = "autocomplete-item";
+
+      const isFav = FAVORITE_VENDORS.includes(vendor);
+
+      div.innerHTML = `
+        <span class="autocomplete-type">【廠商】</span>
+        ${isFav ? '<span class="autocomplete-star">⭐</span>' : ''}
+        <span>${vendor}</span>
+      `;
+
+      div.addEventListener("click", () => {
+        searchInput.value = vendor;
+        autocompleteBox.style.display = "none";
+        applyFilter(); // 點了就查
+      });
+
+      autocompleteBox.appendChild(div);
+    });
+
+    autocompleteBox.style.display = "block";
   }
 
   async function loadData() {
@@ -279,7 +378,7 @@
 
   function applyFilter() {
     const vendor = document.getElementById("vendorSelect").value;
-    const keywordRaw = document.getElementById("searchInput").value.trim();
+    const keywordRaw = searchInput.value.trim();
     const keywordLower = keywordRaw.toLowerCase();
     const needOnly = document.getElementById("needBuyOnly").checked;
 
@@ -291,7 +390,7 @@
       const matchKeyword = keywordRaw
         ? (
             matchDrugCodePrefix5(item.藥代, keywordRaw) ||   // 藥代前5碼
-            matchVendorSmart(item.廠商, keywordRaw) ||       // ✅ 廠商中2 / 英5
+            matchVendorSmart(item.廠商, keywordRaw) ||       // 廠商中2/英5
             drugName.includes(keywordLower)                   // 藥名包含
           )
         : true;
@@ -349,7 +448,7 @@
 
   function updateStatsByCurrentFilter() {
     const vendor = document.getElementById("vendorSelect").value;
-    const keywordRaw = document.getElementById("searchInput").value.trim();
+    const keywordRaw = searchInput.value.trim();
     const keywordLower = keywordRaw.toLowerCase();
 
     const baseData = rawData.filter(item => {
@@ -396,19 +495,38 @@
     });
   }
 
+  /* 事件綁定 */
   document.getElementById("searchBtn").addEventListener("click", applyFilter);
   document.getElementById("resetBtn").addEventListener("click", () => {
     document.getElementById("vendorSelect").value = "";
-    document.getElementById("searchInput").value = "";
+    searchInput.value = "";
     document.getElementById("needBuyOnly").checked = false;
+    autocompleteBox.style.display = "none";
     applyFilter();
   });
   document.getElementById("vendorSelect").addEventListener("change", applyFilter);
-  document.getElementById("searchInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") applyFilter();
+
+  // Enter 查詢 + Input 顯示自動完成
+  searchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      autocompleteBox.style.display = "none";
+      applyFilter();
+    }
   });
+  searchInput.addEventListener("input", () => {
+    showVendorAutocomplete(searchInput.value.trim());
+  });
+
+  // 點空白關閉自動完成
+  document.addEventListener("click", e => {
+    if (!autocompleteBox.contains(e.target) && e.target !== searchInput) {
+      autocompleteBox.style.display = "none";
+    }
+  });
+
   document.getElementById("needBuyOnly").addEventListener("change", applyFilter);
 
+  // 🔴 緊急按鈕
   document.getElementById("emergencyBtn").addEventListener("click", () => {
     document.getElementById("emergencyModal").style.display = "flex";
   });
