@@ -65,17 +65,11 @@
 
     @media (max-width: 640px) { table { font-size: 12px; } }
 
-    /* ✅ 專門給「庫存量（輸入）」那欄用的輸入框 */
     .stock-input { width: 100%; border-radius: 999px; }
-
-    /* 📱 手機版放大庫存輸入框：字變大、變高、好點按 */
     @media (max-width: 640px) {
       .stock-input { font-size: 18px; padding: 10px 16px; height: 44px; }
     }
 
-    /* ===========================
-       🔥 滿版緊急畫面（Modal）
-    =========================== */
     .modal {
       display: none;
       position: fixed;
@@ -136,9 +130,8 @@
 <body>
 <div class="app">
   <h1>藥品採購查詢系統</h1>
-  <div class="subtitle">依廠商前兩碼分類 · 支援藥代/品名搜尋（藥代可輸入前5碼）· 庫存輸入自動判定需採購</div>
+  <div class="subtitle">依廠商前兩碼分類 · 搜尋：中文廠商前2碼 / 英文廠商前5碼 · 藥代前5碼 · 藥名包含 · 庫存輸入自動判定需採購</div>
 
-  <!-- 操作列 -->
   <div class="row">
     <label>廠商（前兩碼）：</label>
     <select id="vendorSelect">
@@ -146,12 +139,11 @@
     </select>
 
     <label>搜尋：</label>
-    <input id="searchInput" type="text" placeholder="輸入藥代前5碼或品名">
+    <input id="searchInput" type="text" placeholder="輸入：藥代前5碼 / 廠商(中文2碼、英文5碼) / 藥名">
 
     <button id="searchBtn">查詢</button>
     <button id="resetBtn">重置</button>
 
-    <!-- 🔴 緊急按鈕 -->
     <button id="emergencyBtn" class="emergency-btn">緊急</button>
 
     <label style="margin-left:auto;">
@@ -160,14 +152,12 @@
     </label>
   </div>
 
-  <!-- 統計 -->
   <div class="row">
     <span class="pill pill-total" id="totalCount">共 0 筆</span>
     <span class="pill pill-buy" id="needBuyCount">需採購 0 筆</span>
     <span class="pill pill-ok" id="okCount">庫存足夠 0 筆</span>
   </div>
 
-  <!-- 表格 -->
   <div class="table-wrap">
     <table>
       <thead>
@@ -184,13 +174,11 @@
     </table>
   </div>
 
-  <!-- 圓餅圖 -->
   <div style="margin-top:20px;">
     <canvas id="chart" height="180"></canvas>
   </div>
 </div>
 
-<!-- 🔥 滿版緊急畫面 -->
 <div id="emergencyModal" class="modal">
   <div class="modal-content">
     <div class="modal-title">⚠️ 緊急通知</div>
@@ -205,11 +193,6 @@
   let viewData = [];
   let chartInstance = null;
 
-  /* ===============================
-     相同品項合併：
-     同一個「廠商 + 藥代 + 藥品」視為同一品項，
-     月用量累加。
-  =============================== */
   function mergeSameItems(list) {
     const merged = {};
     list.forEach(item => {
@@ -224,12 +207,12 @@
     return Object.values(merged);
   }
 
-  /* 廠商前兩碼 */
+  /* 廠商前兩碼（✅ 統一大寫，避免 AS / As 重複） */
   function vendorPrefix(name) {
-    return name.trim().slice(0, 2);
+    return String(name ?? "").trim().slice(0, 2).toUpperCase();
   }
 
-  /* ✅ 藥代：支援「前 5 碼」比對（不分大小寫） */
+  /* 藥代：前 5 碼 */
   function matchDrugCodePrefix5(drugCode, keyword) {
     if (!keyword) return true;
     const code = String(drugCode ?? "").trim().toUpperCase();
@@ -237,7 +220,24 @@
     return code.startsWith(key);
   }
 
-  /* 載入 JSON */
+  /* ✅ 廠商搜尋：中文前2碼 / 英文前5碼 */
+  function matchVendorSmart(vendorName, keyword) {
+    if (!keyword) return true;
+
+    const vendor = String(vendorName ?? "").trim();
+    const key = String(keyword ?? "").trim();
+
+    const hasChinese = /[\u4e00-\u9fff]/.test(key);
+
+    if (hasChinese) {
+      // 中文：前2碼（不轉大小寫）
+      return vendor.startsWith(key.slice(0, 2));
+    } else {
+      // 英文/數字：前5碼（不分大小寫）
+      return vendor.toUpperCase().startsWith(key.toUpperCase().slice(0, 5));
+    }
+  }
+
   async function loadData() {
     try {
       const resp = await fetch("inventory.json");
@@ -263,7 +263,6 @@
     }
   }
 
-  /* 廠商選單 */
   function populateVendors() {
     const sel = document.getElementById("vendorSelect");
     const set = new Set(rawData.map(item => vendorPrefix(item.廠商)));
@@ -278,7 +277,6 @@
     });
   }
 
-  /* 篩選 */
   function applyFilter() {
     const vendor = document.getElementById("vendorSelect").value;
     const keywordRaw = document.getElementById("searchInput").value.trim();
@@ -286,14 +284,19 @@
     const needOnly = document.getElementById("needBuyOnly").checked;
 
     const baseData = rawData.filter(item => {
-      const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
+      const matchVendorDrop = vendor ? vendorPrefix(item.廠商) === vendor : true;
 
       const drugName = String(item.藥品 || "").toLowerCase();
+
       const matchKeyword = keywordRaw
-        ? (matchDrugCodePrefix5(item.藥代, keywordRaw) || drugName.includes(keywordLower))
+        ? (
+            matchDrugCodePrefix5(item.藥代, keywordRaw) ||   // 藥代前5碼
+            matchVendorSmart(item.廠商, keywordRaw) ||       // ✅ 廠商中2 / 英5
+            drugName.includes(keywordLower)                   // 藥名包含
+          )
         : true;
 
-      return matchVendor && matchKeyword;
+      return matchVendorDrop && matchKeyword;
     });
 
     viewData = needOnly ? baseData.filter(item => item.需採購) : baseData;
@@ -302,7 +305,6 @@
     updateStats(baseData);
   }
 
-  /* 表格渲染 */
   function renderTable() {
     const tbody = document.getElementById("drugBody");
     tbody.innerHTML = "";
@@ -333,7 +335,6 @@
     });
   }
 
-  /* 列狀態 */
   function updateRowStatus(tr, item) {
     const td = tr.querySelector(".status-cell");
 
@@ -346,27 +347,30 @@
     }
   }
 
-  /* 重新計算統計（輸入時用） */
   function updateStatsByCurrentFilter() {
     const vendor = document.getElementById("vendorSelect").value;
     const keywordRaw = document.getElementById("searchInput").value.trim();
     const keywordLower = keywordRaw.toLowerCase();
 
     const baseData = rawData.filter(item => {
-      const matchVendor = vendor ? vendorPrefix(item.廠商) === vendor : true;
+      const matchVendorDrop = vendor ? vendorPrefix(item.廠商) === vendor : true;
 
       const drugName = String(item.藥品 || "").toLowerCase();
+
       const matchKeyword = keywordRaw
-        ? (matchDrugCodePrefix5(item.藥代, keywordRaw) || drugName.includes(keywordLower))
+        ? (
+            matchDrugCodePrefix5(item.藥代, keywordRaw) ||
+            matchVendorSmart(item.廠商, keywordRaw) ||
+            drugName.includes(keywordLower)
+          )
         : true;
 
-      return matchVendor && matchKeyword;
+      return matchVendorDrop && matchKeyword;
     });
 
     updateStats(baseData);
   }
 
-  /* 統計 & 圖 */
   function updateStats(baseData) {
     const total = baseData.length;
     const need  = baseData.filter(x => x.庫存量 != null && x.需採購).length;
@@ -392,7 +396,6 @@
     });
   }
 
-  /* 事件綁定 */
   document.getElementById("searchBtn").addEventListener("click", applyFilter);
   document.getElementById("resetBtn").addEventListener("click", () => {
     document.getElementById("vendorSelect").value = "";
@@ -406,24 +409,18 @@
   });
   document.getElementById("needBuyOnly").addEventListener("change", applyFilter);
 
-  // 🔴 緊急按鈕：顯示滿版畫面
   document.getElementById("emergencyBtn").addEventListener("click", () => {
     document.getElementById("emergencyModal").style.display = "flex";
   });
-
-  // 關閉滿版畫面
   document.getElementById("closeModal").addEventListener("click", () => {
     document.getElementById("emergencyModal").style.display = "none";
   });
-
-  // 點滿版背景也可以關閉（非必要可刪）
   document.getElementById("emergencyModal").addEventListener("click", (e) => {
     if (e.target.id === "emergencyModal") {
       document.getElementById("emergencyModal").style.display = "none";
     }
   });
 
-  // 載入資料
   loadData();
 </script>
 
