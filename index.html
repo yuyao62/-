@@ -48,18 +48,8 @@
     /* ===== 桌機表格 ===== */
     .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
     table{ width:100%; border-collapse:collapse; font-size:13px; }
-    th{
-      background:#e5e7eb;
-      padding:8px;
-      position:sticky;
-      top:0;
-      white-space:nowrap;
-    }
-    td{
-      padding:6px 8px;
-      white-space:nowrap;
-      vertical-align: middle;
-    }
+    th{ background:#e5e7eb; padding:8px; position:sticky; top:0; white-space:nowrap; }
+    td{ padding:6px 8px; white-space:nowrap; vertical-align: middle; }
     tr:nth-child(even) td { background:#f3f4f6; }
 
     th.col-code,  td.col-code  { width: 92px; }
@@ -70,28 +60,60 @@
 
     td.col-stock{ padding:4px; }
     td.col-stock input[type="number"]{
-      width:84px;
-      text-align:center;
-      padding:6px 8px;
-      border-radius:10px;
-      font-size:13px;
+      width:84px; text-align:center; padding:6px 8px; border-radius:10px; font-size:13px;
     }
 
-    /* 狀態標籤 */
     .tag { display:inline-block; padding:4px 10px; border-radius:999px; font-weight:800; font-size:12px; }
     .tag-empty{ background:#e5e7eb; color:#111827; }
     .tag-buy{ background:#fee2e2; color:#b91c1c; }
     .tag-ok{ background:#dcfce7; color:#166534; }
 
-    /* ===== ✅ 手機：改成卡片（完全不用左右滑） ===== */
+    /* ===== ✅ 手機：卡片版（無左右滑） ===== */
     @media (max-width: 520px){
       .app{ margin:12px; padding:16px; }
-      .table-wrap{ overflow: visible; }
 
+      /* ✅ 讓「廠商 + 搜尋」同一行，且搜尋更大 */
+      .row.row-top{
+        display:grid;
+        grid-template-columns: 70px 1fr; /* label + 控制項 */
+        column-gap:10px;
+        row-gap:10px;
+        align-items:center;
+      }
+      .row.row-top .vendor-wrap{
+        grid-column: 1 / -1;
+        display:grid;
+        grid-template-columns: 70px 1fr;
+        gap:10px;
+        align-items:center;
+      }
+      .row.row-top .search-wrap{
+        grid-column: 1 / -1;
+        display:grid;
+        grid-template-columns: 70px 1fr; /* ✅ 搜尋欄吃滿 */
+        gap:10px;
+        align-items:center;
+      }
+      .row.row-top select,
+      .row.row-top input{
+        width:100%;
+        font-size:16px;
+        padding:10px 14px;
+      }
+
+      /* 按鈕列：自動換行，但盡量塞同一行 */
+      .row.row-actions{
+        gap:10px;
+      }
+      .row.row-actions button{
+        padding:10px 14px;
+      }
+
+      .table-wrap{ overflow: visible; }
       table{ border-collapse: separate; border-spacing: 0 10px; }
       thead{ display:none; }
-
       tbody, tr, td{ display:block; width:100%; }
+
       tr{
         background:#fff;
         border-radius:16px;
@@ -102,8 +124,8 @@
 
       td{ white-space: normal; padding: 10px 12px; }
 
-      td.col-code{ font-weight:900; font-size:14px; padding-bottom: 6px; }
-      td.col-usage{ text-align:left; color:#374151; padding-top:0; padding-bottom: 8px; }
+      td.col-code{ font-weight:900; font-size:15px; padding-bottom: 6px; }
+      td.col-usage{ color:#374151; padding-top:0; padding-bottom: 8px; }
 
       td.col-drug{
         color:#111827;
@@ -117,31 +139,48 @@
         padding-bottom: 10px;
       }
 
+      /* ✅ 這段是你要的：庫存 + 狀態 同一行（狀態可被省略） */
       td.col-stock{
         padding-top:0;
         display:flex;
         align-items:center;
         justify-content: space-between;
-        gap: 10px;
+        gap:10px;
       }
       td.col-stock::before{
         content:"庫存";
         font-weight:900;
         color:#111827;
+        flex: 0 0 auto;
       }
       td.col-stock input[type="number"]{
         width: 110px;
         font-size:16px;
         padding:10px 10px;
         border-radius:14px;
+        flex: 0 0 auto;
       }
 
-      td.col-status{ padding-top:0; padding-bottom: 12px; }
+      /* ✅ 狀態改成 inline，跟庫存同一行（放在 col-status 但視覺上同列） */
+      td.col-status{
+        padding-top:0;
+        padding-bottom: 12px;
+        display:flex;
+        align-items:center;
+        gap:10px;
+      }
       td.col-status::before{
         content:"狀態";
         font-weight:900;
         color:#111827;
-        margin-right: 10px;
+        flex: 0 0 auto;
+      }
+      td.col-status .tag{
+        max-width: 120px;          /* ✅ 狀態太長就省略 */
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        display:inline-block;
       }
     }
 
@@ -158,20 +197,26 @@
   <h1>藥品採購查詢系統</h1>
   <div class="subtitle">廠商下拉：中文前2碼 → 英文前5碼（中文優先顯示）</div>
 
-  <div class="row">
-    <label>廠商：</label>
-    <select id="vendorSelect"><option value="">全部</option></select>
-
-    <label>搜尋：</label>
-    <div style="position:relative;flex:1">
-      <input id="searchInput" style="width:100%" placeholder="輸入就會自動查（藥代 / 藥名 / 廠商）">
+  <!-- ✅ 手機：分成 row-top / row-actions 方便排版 -->
+  <div class="row row-top">
+    <div class="vendor-wrap">
+      <label>廠商：</label>
+      <select id="vendorSelect"><option value="">全部</option></select>
     </div>
 
+    <div class="search-wrap">
+      <label>搜尋：</label>
+      <input id="searchInput" placeholder="輸入就會自動查（藥代 / 藥名 / 廠商）">
+    </div>
+  </div>
+
+  <div class="row row-actions">
     <button id="searchBtn">查詢</button>
     <button id="resetBtn">重置</button>
     <button id="emergencyBtn" class="emergency-btn">緊急</button>
-
-    <label><input type="checkbox" id="needBuyOnly"> 只顯示需採購</label>
+    <label style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="needBuyOnly"> 只顯示需採購
+    </label>
   </div>
 
   <div class="row">
@@ -208,7 +253,7 @@
 <script>
 (() => {
   let rawData=[], viewData=[], chart;
-  let typingTimer = null;
+  let typingTimer=null;
 
   const $=id=>document.getElementById(id);
   const isEng=s=>/^[A-Za-z]/.test(s);
@@ -219,15 +264,15 @@
   };
 
   function blurSearch(){
-    const si = $("searchInput");
+    const si=$("searchInput");
     si.blur();
     document.body.focus?.();
   }
 
   function scrollToFirstResult(){
-    const firstRow = $("drugBody").querySelector("tr");
+    const firstRow=$("drugBody").querySelector("tr");
     if(!firstRow) return;
-    firstRow.scrollIntoView({ block: "start", behavior: "smooth" });
+    firstRow.scrollIntoView({block:"start", behavior:"smooth"});
   }
 
   function populateVendors(){
@@ -246,7 +291,7 @@
     });
   }
 
-  function filterData({scroll=false} = {}){
+  function filterData({scroll=false}={}){
     const vSel=$("vendorSelect").value;
     const kwRaw=$("searchInput").value.trim();
     const kw=kwRaw.toLowerCase();
@@ -264,7 +309,6 @@
 
     viewData=needOnly?base.filter(x=>x.需採購):base;
     render(base);
-
     if(scroll) scrollToFirstResult();
   }
 
@@ -279,13 +323,13 @@
   }
 
   function moveToNextStockInput(currentInput){
-    const inputs = Array.from(document.querySelectorAll('#drugBody input[type="number"]'));
-    const idx = inputs.indexOf(currentInput);
-    if(idx >= 0 && idx < inputs.length - 1){
-      const next = inputs[idx + 1];
+    const inputs=Array.from(document.querySelectorAll('#drugBody input[type="number"]'));
+    const idx=inputs.indexOf(currentInput);
+    if(idx>=0 && idx<inputs.length-1){
+      const next=inputs[idx+1];
       next.focus();
       next.select?.();
-      next.scrollIntoView({ block: "center", behavior: "smooth" });
+      next.scrollIntoView({block:"center", behavior:"smooth"});
     }else{
       currentInput.blur();
     }
@@ -354,7 +398,6 @@
     filterData();
   }
 
-  // ✅ 查詢按鈕：仍保留，但不用一定按
   $("searchBtn").onclick=()=>{
     filterData({scroll:true});
     blurSearch();
@@ -378,15 +421,12 @@
     blurSearch();
   };
 
-  // ✅ 輸入就自動查詢（防抖 250ms）
+  /* ✅ 輸入自動查（防抖 250ms） */
   $("searchInput").addEventListener("input", ()=>{
     if(typingTimer) clearTimeout(typingTimer);
-    typingTimer = setTimeout(()=>{
-      filterData({scroll:true});
-    }, 250);
+    typingTimer=setTimeout(()=>filterData({scroll:true}), 250);
   });
 
-  // ✅ Enter：立即查 + 收鍵盤 + 捲第一筆
   $("searchInput").addEventListener("keydown",(e)=>{
     if(e.key==="Enter"){
       e.preventDefault();
@@ -396,14 +436,12 @@
     }
   });
 
-  // ✅ 點清單/空白處：自動收鍵盤（點到 input/select 不干擾）
-  document.addEventListener("pointerdown", (e)=>{
-    const t = e.target;
-    const isInput = t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.isContentEditable);
-    if(!isInput){
-      blurSearch();
-    }
-  }, { passive: true });
+  /* ✅ 點空白收鍵盤（點 input/select 不干擾） */
+  document.addEventListener("pointerdown",(e)=>{
+    const t=e.target;
+    const isInput=t && (t.tagName==="INPUT" || t.tagName==="SELECT" || t.isContentEditable);
+    if(!isInput) blurSearch();
+  }, {passive:true});
 
   $("emergencyBtn").onclick=()=>$("emergencyModal").style.display="flex";
 
