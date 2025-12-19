@@ -1,16 +1,23 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<title>藥品採購查詢系統</title>
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>藥品採購查詢系統</title>
+
+<!-- 如果你原本有 Chart.js，保留這行（或用你自己的路徑） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-* { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-body { margin: 0; background: #eef1f7; min-height: 100vh; }
-body.lock { overflow: hidden; }
+/* ===== 全站基準字體：讓上/下半部一致 ===== */
+html{ font-size:16px; }
+body{
+  margin:0;
+  background:#f3f4f6;
+  font-size:16px;         /* ✅ 基準字 */
+  line-height:1.4;
+  color:#111827;
+}
 
 .app{
   width:min(1100px,100%);
@@ -31,9 +38,10 @@ input, select{
   padding:8px 14px;
   border-radius:999px;
   border:1px solid #d1d5db;
-  font-size:14px;
+  font-size:16px;         /* ✅ 原本 14px -> 16px：和下半部一致，也避免 iOS 縮放 */
   max-width:100%;
 }
+
 button{
   padding:8px 18px;
   border-radius:999px;
@@ -48,19 +56,25 @@ button{
 .ghost-btn{ background:#e5e7eb; color:#111827; }
 .warn-pill{ background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
 
-.pill{ padding:4px 12px; border-radius:999px; font-size:13px; font-weight:800; }
+.pill{ padding:4px 12px; border-radius:999px; font-size:14px; font-weight:800; } /* ✅ 原本 13px -> 14px */
 .pill-total{ background:#dbeafe; color:#1e3a8a; }
 .pill-buy{ background:#fee2e2; color:#991b1b; }
 .pill-ok{ background:#dcfce7; color:#166534; }
 
 .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-table{ width:100%; border-collapse:collapse; font-size:13px; }
+table{ width:100%; border-collapse:collapse; font-size:16px; } /* ✅ 原本 13px -> 16px：下半部變大 */
 th{ background:#e5e7eb; padding:8px; position:sticky; top:0; }
 td{ padding:6px 8px; vertical-align:middle; }
 tr:nth-child(even) td{ background:#f3f4f6; }
 td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
 
-.tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-weight:800; font-size:12px; }
+.tag{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:14px;         /* ✅ 原本 12px -> 14px：跟列表一致 */
+}
 .tag-empty{ background:#e5e7eb; }
 .tag-buy{ background:#fee2e2; color:#b91c1c; }
 .tag-ok{ background:#dcfce7; color:#166534; }
@@ -87,16 +101,23 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
     padding:10px;
     max-width:100%;
     overflow:hidden;
+
+    font-size:16px;        /* ✅ 讓手機版卡片列整體字體跟上半部一致 */
   }
 
   td{ padding:0; white-space:normal; min-width:0; }
-  td.col-code{ grid-area:code; font-weight:900; font-size:14px; }
+
+  td.col-code{ grid-area:code; font-weight:900; font-size:16px; } /* ✅ 原本 14px -> 16px */
   td.col-drug{
     grid-area:drug; font-weight:700; line-height:1.3;
+    font-size:16px;        /* ✅ 補上：原本沒指定會吃到較小 */
     overflow-wrap:anywhere; word-break:break-word;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  td.col-usage{ grid-area:usage; font-weight:800; color:#374151; }
+  td.col-usage{
+    grid-area:usage; font-weight:800; color:#374151;
+    font-size:16px;        /* ✅ 一致 */
+  }
 
   td.col-stock{
     grid-area:right;
@@ -110,7 +131,8 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
   }
   td.col-stock .tag{
     max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    font-size:11px; padding:4px 6px;
+    font-size:14px;        /* ✅ 原本 11px -> 14px */
+    padding:4px 6px;
   }
   #searchInput{ font-size:16px; padding:10px 16px; }
 }
@@ -155,7 +177,7 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
   margin-bottom:12px;
 }
 .buy-title{ font-size:22px; font-weight:900; }
-.buy-sub{ color:#cbd5e1; font-size:13px; margin-top:4px; }
+.buy-sub{ color:#cbd5e1; font-size:14px; margin-top:4px; } /* ✅ 13 -> 14 */
 .buy-actions{ display:flex; flex-wrap:wrap; gap:10px; }
 
 .vendor-group{
@@ -164,7 +186,7 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
   border-radius:10px;
   background:#020617;
   font-weight:900;
-  font-size:14px;
+  font-size:16px; /* ✅ 14 -> 16 */
   color:#e5e7eb;
   letter-spacing:.5px;
 }
@@ -180,10 +202,10 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
   border-radius:12px;
   margin-bottom:8px;
 }
-.buy-code{ font-weight:900; font-size:14px; color:#e5e7eb; }
+.buy-code{ font-weight:900; font-size:16px; color:#e5e7eb; } /* ✅ 14 -> 16 */
 .buy-drug{
   font-weight:800;
-  font-size:14px;
+  font-size:16px; /* ✅ 14 -> 16 */
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -194,7 +216,7 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
   gap:10px;
   font-weight:900;
   white-space:nowrap;
-  font-size:13px;
+  font-size:16px; /* ✅ 13 -> 16 */
 }
 .buy-need{
   display:inline-block;
@@ -202,7 +224,7 @@ td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
   border-radius:999px;
   background:#fecaca;
   color:#7f1d1d;
-  font-size:12px;
+  font-size:14px; /* ✅ 12 -> 14 */
   font-weight:900;
 }
 
@@ -319,7 +341,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
 
   const $ = id => document.getElementById(id);
 
-  // ✅ 你目前一個月一檔：預設檔名規則 inventory_YYYY_MM.json
   function fileNameOf(year, month){
     const mm = String(month).padStart(2,"0");
     return `inventory_${year}_${mm}.json`;
@@ -337,7 +358,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
   };
 
   function initYearMonthUI(){
-    // year select: 今年、去年、明年（你可自行加更多）
     const y = new Date().getFullYear();
     $("yearSelect").innerHTML = "";
     [y-1, y, y+1].forEach(yy=>{
@@ -370,14 +390,12 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     $("usageHead").textContent = (s===e) ? `${s}月用量` : `${s}→${e}月累加`;
   }
 
-  // ✅ 讀每月檔：每筆允許欄位：月用量 / 用量（兩者擇一）
   function pickUsageValue(rec){
     const v = (rec["月用量"] ?? rec["用量"] ?? rec["使用量"] ?? rec["月使用量"]);
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
   }
 
-  // ✅ 合併：用藥代當 key，把每月用量塞到 `${m}月用量`
   function mergeMonthlyData(year, monthlyDatas){
     const map = new Map();
 
@@ -396,7 +414,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
             _用量合計: 0
           });
         }else{
-          // 補缺資料（若某月檔有，其他月檔沒）
           const x = map.get(code);
           if(!x.藥品 && (rec["藥品"]||rec["藥名"]||rec["品名"])) x.藥品 = rec["藥品"] ?? rec["藥名"] ?? rec["品名"];
           if(!x.廠商 && (rec["廠商"]||rec["供應商"])) x.廠商 = rec["廠商"] ?? rec["供應商"];
@@ -410,7 +427,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     return [...map.values()];
   }
 
-  // ✅ 依區間計算（同年；若 end < start 視為跨年：start..12 + 1..end）
   function monthRangeSum(x, startM, endM){
     const getM = (m) => Number(x[`${m}月用量`] ?? 0) || 0;
     let sum = 0;
@@ -418,7 +434,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     if(startM <= endM){
       for(let m=startM; m<=endM; m++) sum += getM(m);
     }else{
-      // 跨年：需要讀「兩個年份」才完整，但這版先以同年資料計算（沒有的月份=0）
       for(let m=startM; m<=12; m++) sum += getM(m);
       for(let m=1; m<=endM; m++) sum += getM(m);
     }
@@ -671,7 +686,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     downloadFile(`需採購清單_${nowStamp()}.json`, "application/json;charset=utf-8", JSON.stringify(list, null, 2));
   }
 
-  /* ========= 庫存保存 / 還原 ========= */
   const STOCK_KEY = "drug_stock_v1";
   function persistStock(){
     const obj = {};
@@ -699,7 +713,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     $("missingFilesPill").textContent = `缺少月份檔：${missingFiles.join("、")}（缺的月份用量視為 0）`;
   }
 
-  // ✅ 核心：一次載入指定年份 12 個月份檔（存在就合併，不存在就記錄缺檔）
   async function loadMonthlyFiles(){
     const year = Number($("yearSelect").value);
     missingFiles = [];
@@ -722,7 +735,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     rawData = mergeMonthlyData(year, ok);
     restoreStock();
 
-    // vendor select 重建
     const keepAll = $("vendorSelect").value || "";
     $("vendorSelect").innerHTML = `<option value="">全部</option>`;
     [...new Set(rawData.map(x=>vendorKey(x.廠商)))].filter(v=>v).forEach(v=>{
@@ -737,7 +749,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     filter();
   }
 
-  /* ========= 事件 ========= */
   $("searchInput").addEventListener("input", ()=>{
     clearTimeout(window._t);
     window._t = setTimeout(()=>{
@@ -814,7 +825,6 @@ document.addEventListener("touchstart", ()=>{}, {passive:true});
     if(e.target.id === "emergencyModal") $("emergencyModal").style.display = "none";
   });
 
-  // 初始化
   initYearMonthUI();
   loadMonthlyFiles().catch(err=>{
     console.error(err);
