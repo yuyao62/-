@@ -104,8 +104,8 @@ tr:nth-child(even) td{ background:#f3f4f6; }
   </div>
 
   <div class="row">
-    <label>搜尋藥品</label>
-    <input id="searchInput" placeholder="輸入藥代或藥品名稱">
+    <label>搜尋藥品/廠商</label>
+    <input id="searchInput" placeholder="輸入藥代、藥品或廠商">
     <button id="searchBtn">搜尋</button>
   </div>
 
@@ -179,7 +179,7 @@ tr:nth-child(even) td{ background:#f3f4f6; }
         rows.forEach(x=>{
           let rec = rawData.find(r=>r.藥代===x["藥代"]);
           if(!rec){
-            rec = {藥代:x["藥代"], 藥品:x["藥品"]};
+            rec = {藥代:x["藥代"], 藥品:x["藥品"], 廠商:x["廠商"]};
             rawData.push(rec);
           }
           rec[`m${m}`] = Number(x["月用量"]||0);
@@ -274,36 +274,48 @@ tr:nth-child(even) td{ background:#f3f4f6; }
       $("overList").style.display = "none";
     }
   }
-  // 搜尋功能
+  // 搜尋功能（支援藥代、藥品、廠商）
   $("searchBtn").onclick = () => {
     const keyword = $("searchInput").value.trim();
     if(!keyword){ render(); return; }
     const tb = $("drugBody");
     tb.innerHTML = "";
-    rawData.filter(x=>x.藥代.includes(keyword) || x.藥品.includes(keyword))
-      .forEach(x=>{
-        const u = usage(x);
-        const st = stock[x.藥代];
-        const overFlag = isOver(x);
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${x.藥代}</td>
-          <td>${x.藥品}</td>
-          <td>${u}</td>
-          <td>
-            <div class="stock-wrap">
-              <div class="stock-top">
-                <input type="number" value="${st??""}">
-                ${overFlag?'<span class="tag tag-over">庫存過高</span>':
-                  st==null?'<span class="tag tag-empty">未輸入</span>':
-                  '<span class="tag tag-ok">正常</span>'}
-              </div>
-              <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
+
+    rawData.filter(x=>{
+      // 中文：比對前2碼
+      if(/[\u4e00-\u9fa5]/.test(keyword)){
+        return (x.廠商 && x.廠商.startsWith(keyword.slice(0,2))) ||
+               x.藥代.includes(keyword) || x.藥品.includes(keyword);
+      }
+      // 英文：比對前5碼（忽略大小寫）
+      else{
+        return (x.廠商 && x.廠商.toLowerCase().startsWith(keyword.slice(0,5).toLowerCase())) ||
+               x.藥代.toLowerCase().includes(keyword.toLowerCase()) ||
+               x.藥品.toLowerCase().includes(keyword.toLowerCase());
+      }
+    }).forEach(x=>{
+      const u = usage(x);
+      const st = stock[x.藥代];
+      const overFlag = isOver(x);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${x.藥代}</td>
+        <td>${x.藥品}</td>
+        <td>${u}</td>
+        <td>
+          <div class="stock-wrap">
+            <div class="stock-top">
+              <input type="number" value="${st??""}">
+              ${overFlag?'<span class="tag tag-over">庫存過高</span>':
+                st==null?'<span class="tag tag-empty">未輸入</span>':
+                '<span class="tag tag-ok">正常</span>'}
             </div>
-          </td>
-        `;
-        tb.appendChild(tr);
-      });
+            <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
+          </div>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
   };
 
   // 重置功能
@@ -355,4 +367,3 @@ tr:nth-child(even) td{ background:#f3f4f6; }
 </script>
 </body>
 </html>
-
