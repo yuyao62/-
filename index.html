@@ -2,208 +2,315 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>藥品採購查詢系統</title>
 <style>
-html,body{max-width:100%;overflow-x:hidden;margin:0;padding:0;font:16px/1.35 system-ui,-apple-system,"PingFang TC","Noto Sans TC",sans-serif;background:#f3f4f6;color:#111827}
+html,body{max-width:100%;overflow-x:hidden;margin:0;padding:0;font:16px/1.4 system-ui;background:#f3f4f6;color:#111827}
 *{box-sizing:border-box;max-width:100%}
-.app{width:min(1100px,100%);margin:16px auto;background:#fff;padding:14px;border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.12)}
-h1{margin:0 0 6px;text-align:center}
-.sub{margin:0 0 10px;text-align:center;color:#6b7280;font-size:13px}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.app{width:min(1100px,100%);margin:12px auto;background:#fff;padding:14px;border-radius:14px;box-shadow:0 10px 24px rgba(0,0,0,.12)}
+h1{margin:0 0 6px;text-align:center}.sub{color:#6b7280;text-align:center;font-size:13px;margin-bottom:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
 label{font-weight:900}
 input,select,button{font-size:16px;padding:8px 12px;border-radius:999px;border:1px solid #d1d5db}
-button{border:none;cursor:pointer;background:#4f46e5;color:#fff;font-weight:900}
-.btn2{background:#111827}.btnG{background:#e5e7eb;color:#111827}.btnN{background:#374151}
-.announce{display:none;margin:10px 0;padding:10px 12px;border-radius:14px;background:#ede9fe;color:#4c1d95;font-weight:900}
-.pill{padding:4px 10px;border-radius:999px;font-size:14px;font-weight:900}
-.pT{background:#dbeafe}.pB{background:#fee2e2;color:#991b1b}.pO{background:#dcfce7;color:#166534}.pF{background:#ede9fe;color:#4c1d95}
+button{border:none;cursor:pointer;font-weight:900;background:#4f46e5;color:#fff}
+.b2{background:#111827}.b3{background:#e5e7eb;color:#111827}.b4{background:#374151}
+.pill{padding:4px 12px;border-radius:999px;font-size:13px;font-weight:900}
+.p1{background:#dbeafe}.p2{background:#fee2e2;color:#991b1b}.p3{background:#dcfce7;color:#166534}.p4{background:#ede9fe;color:#4c1d95}
+#notice{display:none;margin:10px 0;padding:10px 12px;border-radius:12px;background:#ede9fe;color:#4c1d95;font-weight:900;cursor:pointer}
 .table{width:100%;border-collapse:collapse;table-layout:fixed}
-th,td{padding:8px;word-break:break-word;vertical-align:top}
-th{background:#e5e7eb}tr:nth-child(even) td{background:#f3f4f6}
+th,td{padding:8px;vertical-align:top;word-break:break-word}th{background:#e5e7eb}tr:nth-child(even) td{background:#f3f4f6}
 .tag{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:900;font-size:13px}
-.tE{background:#e5e7eb}.tO{background:#dcfce7;color:#166534}.tB{background:#fee2e2;color:#991b1b}.tF{background:#ede9fe;color:#5b21b6}
+.t0{background:#e5e7eb}.t1{background:#dcfce7;color:#166534}.t2{background:#fee2e2;color:#991b1b}.t3{background:#ede9fe;color:#5b21b6}
 .stock{display:flex;flex-direction:column;gap:6px}.top{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .note{width:100%;padding:6px 10px;border-radius:10px;border:1px solid #d1d5db;font-size:14px}
-@media(max-width:520px){
+.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0 10px}
+.view{display:none}.view.on{display:block}
+@media (max-width:520px){
 .app{margin:0;border-radius:0;box-shadow:none}
 table,thead,tbody,tr,td,th{display:block;width:100%}thead{display:none}
-tr{background:#fff;border-radius:14px;padding:10px;margin-bottom:10px}
-td{padding:4px 0}td::before{display:block;margin-bottom:2px;font-weight:900;color:#6b7280}
-td:nth-child(1)::before{content:"廠商"}td:nth-child(2)::before{content:"藥代"}
-td:nth-child(3)::before{content:"藥品"}td:nth-child(4)::before{content:"用量"}td:nth-child(5)::before{content:"庫存"}
+tr{background:#fff;border-radius:14px;padding:10px;margin:10px 0}td{padding:4px 0}
+td::before{display:block;font-weight:900;color:#6b7280;margin-bottom:2px}
+td:nth-child(1)::before{content:"藥代"}td:nth-child(2)::before{content:"藥品"}
+td:nth-child(3)::before{content:"用量"}td:nth-child(4)::before{content:"庫存"}td:nth-child(5)::before{content:"廠商"}
 }
-</style></head><body>
-<div class="app">
-  <h1>藥品採購查詢系統</h1>
-  <div class="sub">每月一檔 inventory_YYYY_MM.json（預設單月；需要多月再勾）</div>
+</style></head><body><div class="app">
+<h1>藥品採購查詢系統</h1><div class="sub">單月為主｜☑ 進階模式可選多月｜inventory_YYYY_MM.json</div>
 
-  <div id="announce" class="announce"></div>
+<div class="nav">
+<button class="b2" id="goMain">查詢</button>
+<button class="b4" id="goYear">年度總覽</button>
+<button class="b4" id="goVendor">廠商頁</button>
+<button class="b3" id="exportBtn">匯出 Excel</button>
+</div>
 
-  <div class="row">
-    <label>年份</label><select id="year"></select>
-    <label>月份</label>
-    <button id="prev" class="btnN" title="上個月">◀</button>
-    <select id="m1"></select>
-    <span id="rangeUI" style="display:none;align-items:center;gap:8px">
-      <span style="font-weight:900;color:#6b7280">到</span><select id="m2"></select>
-    </span>
-    <button id="next" class="btnN" title="下個月">▶</button>
+<div id="notice" title="點一下開啟：公告清單/廠商頁"></div>
 
-    <label style="margin-left:6px"><input id="range" type="checkbox" style="transform:scale(1.1);margin-right:6px">多月</label>
-    <button id="reload" class="btn2">重新載入</button>
-    <button id="reset" class="btnG">重置</button>
-  </div>
+<!-- ===== 查詢頁 ===== -->
+<div id="vMain" class="view on">
+<div class="row">
+<label>年份</label><select id="year"></select>
+<label>月份</label><button class="b4" id="pm">◀</button><select id="m1"></select><button class="b4" id="nm">▶</button>
+<label style="margin-left:6px"><input type="checkbox" id="adv"/> 進階模式</label>
+<span id="advBox" style="display:none">
+<label>到</label><select id="m2"></select>
+</span>
+<button class="b2" id="reload">重新載入</button><button class="b3" id="reset">重置</button>
+</div>
 
-  <div class="row">
-    <label>廠商</label>
-    <input id="vendor" list="vendorList" placeholder="下拉或輸入廠商關鍵字">
-    <datalist id="vendorList"></datalist>
+<div class="row">
+<label>廠商</label>
+<input id="vendorQ" placeholder="輸入廠商(可模糊)" list="vendorList" style="min-width:220px">
+<datalist id="vendorList"></datalist>
+<button id="vendorClear" class="b3">清除</button>
+</div>
 
-    <label>藥代</label><input id="qCode" placeholder="藥代關鍵字">
-    <label>藥品</label><input id="qName" placeholder="藥品關鍵字">
-    <button id="doFilter">篩選</button>
-    <button id="clear" class="btnG">清空</button>
-  </div>
+<div class="row">
+<label>藥代</label><input id="codeQ" placeholder="例如 A123" style="min-width:160px">
+<label>藥品</label><input id="nameQ" placeholder="例如 Amoxicillin" style="min-width:220px">
+<button id="search">搜尋</button><button id="clear" class="b3">清空</button>
+</div>
 
-  <div class="row">
-    <span class="pill pT" id="c0"></span>
-    <span class="pill pB" id="c1"></span>
-    <span class="pill pO" id="c2"></span>
-    <span class="pill pF" id="c3"></span>
-  </div>
+<div class="row">
+<span class="pill p1" id="cAll"></span>
+<span class="pill p2" id="cBuy"></span>
+<span class="pill p3" id="cOk"></span>
+<span class="pill p4" id="cAnn"></span>
+</div>
 
-  <table class="table">
-    <thead><tr><th>廠商</th><th>藥代</th><th>藥品</th><th>用量</th><th>庫存</th></tr></thead>
-    <tbody id="tb"></tbody>
-  </table>
+<table class="table">
+<thead><tr><th>藥代</th><th>藥品</th><th>用量</th><th>庫存</th><th>廠商</th></tr></thead>
+<tbody id="tb"></tbody>
+</table>
+</div>
+
+<!-- ===== 年度總覽 ===== -->
+<div id="vYear" class="view">
+<div class="row">
+<label>年份</label><select id="year2"></select>
+<button class="b2" id="loadYear">載入年度總覽</button>
+<span class="pill p1" id="yInfo"></span>
+</div>
+<table class="table">
+<thead><tr><th>藥代</th><th>藥品</th><th>年度用量</th><th>庫存</th><th>廠商</th></tr></thead>
+<tbody id="yTb"></tbody>
+</table>
+</div>
+
+<!-- ===== 廠商頁 ===== -->
+<div id="vVendor" class="view">
+<div class="row">
+<label>廠商</label><input id="vendorPick" placeholder="輸入/選擇廠商" list="vendorList2" style="min-width:240px">
+<datalist id="vendorList2"></datalist>
+<button class="b2" id="openVendor">開啟</button>
+</div>
+<table class="table">
+<thead><tr><th>藥代</th><th>藥品</th><th>用量(目前選擇)</th><th>庫存</th><th>廠商</th></tr></thead>
+<tbody id="vTb"></tbody>
+</table>
+</div>
+
 </div>
 
 <script>
 (()=>{const $=id=>document.getElementById(id);
-let data=[]; // {vendor,code,name,u}
-const STOCK="drug_stock_v1",MANUAL="manual_over_v1",NOTE="drug_note_v1";
+let data=[], vendors=[], lastFiltered=[], lastView="vMain";
+const STOCK="drug_stock_v1", MAN="manual_over_v1", NOTE="drug_note_v1";
 const stock=JSON.parse(localStorage.getItem(STOCK)||"{}");
-const manual=JSON.parse(localStorage.getItem(MANUAL)||"{}");
+const manual=JSON.parse(localStorage.getItem(MAN)||"{}");
 const notes=JSON.parse(localStorage.getItem(NOTE)||"{}");
 
-const pad=n=>String(n).padStart(2,"0");
-const fname=(y,m)=>`inventory_${y}_${pad(m)}.json`;
-const pickVendor=r=>r["廠商"]??r["廠商名稱"]??r["供應商"]??r["Vendor"]??"";
-const pickCode=r=>r["藥代"]??r["代碼"]??r["code"]??"";
-const pickName=r=>r["藥品"]??r["品名"]??r["name"]??"";
-const pickUsage=r=>Number(r["月用量"]??r["用量"]??r["usage"]??0);
+const isCJK=c=>/[\u4E00-\u9FFF]/.test(c||"");
+const normVendor=s=>{
+  s=(s||"").trim(); if(!s) return "";
+  const a=s[0],b=s[1]; if(isCJK(a)&&isCJK(b)) return s.slice(0,2);
+  return s.slice(0,2);
+};
+const file=(y,m)=>`inventory_${y}_${String(m).padStart(2,"0")}.json`;
 
-function setAnnounce(msg){const a=$("announce");a.textContent=msg;a.style.display=msg?"block":"none";}
-function initYM(){
-  const y=new Date().getFullYear();$("year").innerHTML="";$("year").appendChild(new Option(y,y,true,true));
-  $("m1").innerHTML="";$("m2").innerHTML="";
+function setView(id){["vMain","vYear","vVendor"].forEach(v=>$(v).classList.toggle("on",v===id)); lastView=id;}
+$("goMain").onclick=()=>setView("vMain");
+$("goYear").onclick=()=>setView("vYear");
+$("goVendor").onclick=()=>setView("vVendor");
+
+function init(){
+  const y=new Date().getFullYear();
+  [$("year"),$("year2")].forEach(sel=>{sel.innerHTML=""; sel.appendChild(new Option(y,y));});
   for(let i=1;i<=12;i++){ $("m1").appendChild(new Option(i,i)); $("m2").appendChild(new Option(i,i)); }
   const m=new Date().getMonth()+1; $("m1").value=m; $("m2").value=m;
+  $("adv").onchange=()=>{ $("advBox").style.display=$("adv").checked?"inline-flex":"none"; load(); };
+  $("m1").onchange=load; $("m2").onchange=load; $("year").onchange=load;
+  $("pm").onclick=()=>shift(-1); $("nm").onclick=()=>shift(1);
+  $("reload").onclick=load;
+  $("reset").onclick=()=>{[STOCK,MAN,NOTE].forEach(k=>localStorage.removeItem(k)); location.reload();};
+  $("search").onclick=applyFilters;
+  $("clear").onclick=()=>{$("codeQ").value="";$("nameQ").value="";applyFilters();};
+  $("vendorClear").onclick=()=>{$("vendorQ").value="";applyFilters();};
+  $("vendorQ").oninput=applyFilters;
+  $("codeQ").oninput=applyFilters; $("nameQ").oninput=applyFilters;
+
+  $("loadYear").onclick=loadYear;
+  $("openVendor").onclick=()=>renderVendorPage($("vendorPick").value.trim());
+
+  $("exportBtn").onclick=exportExcelLike;
+  $("notice").onclick=()=>{ setView("vVendor"); $("vendorPick").focus(); };
+  load();
 }
-function rangeMonths(){
-  let s=+$("m1").value,e=+$("m2").value; if(e<s){const t=s;s=e;e=t;}
-  const arr=[]; for(let m=s;m<=e;m++) arr.push(m); return arr;
+
+function shift(d){
+  let m=+$("m1").value; m=Math.min(12,Math.max(1,m+d)); $("m1").value=m;
+  if(!$("adv").checked) $("m2").value=m;
+  load();
 }
+
 async function load(){
-  data=[]; $("vendorList").innerHTML="";
-  const y=$("year").value;
-  const months = $("range").checked ? rangeMonths() : [+$("m1").value];
-  const merged=new Map(); // code -> {vendor,code,name,u}
-  for(const m of months){
+  data=[]; vendors=[];
+  const y=$("year").value, s=+$("m1").value, e=$("adv").checked?+$("m2").value:s;
+  const a=Math.min(s,e), b=Math.max(s,e);
+  for(let m=a;m<=b;m++){
     try{
-      const r=await fetch(fname(y,m),{cache:"no-store"}); if(!r.ok) continue;
+      const r=await fetch(file(y,m),{cache:"no-store"}); if(!r.ok) continue;
       const rows=await r.json();
-      rows.forEach(row=>{
-        const code=String(pickCode(row)||"").trim(); if(!code) return;
-        const name=String(pickName(row)||"").trim();
-        const vendor=String(pickVendor(row)||"").trim();
-        const u=pickUsage(row)||0;
-        if(!merged.has(code)) merged.set(code,{vendor,code,name,u:0});
-        const rec=merged.get(code);
-        if(!rec.vendor && vendor) rec.vendor=vendor;
-        if(!rec.name && name) rec.name=name;
-        rec.u += u;
+      rows.forEach(x=>{
+        const code=x["藥代"], name=x["藥品"], use=Number(x["月用量"]||0);
+        const vRaw=(x["廠商"]||x["供應商"]||x["藥商"]||"").trim();
+        const vend=normVendor(vRaw) || normVendor(name) || ""; // 沒廠商欄時：退一步用藥品前兩碼（你可改）
+        let rec=data.find(r=>r.藥代===code);
+        if(!rec){ rec={藥代:code,藥品:name,廠商:vend,用量:0}; data.push(rec); }
+        rec.用量+=use;
+        if(vend && !vendors.includes(vend)) vendors.push(vend);
       });
     }catch{}
   }
-  data=[...merged.values()];
-  // vendor datalist
-  const vs=[...new Set(data.map(x=>x.vendor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"zh-Hant"));
-  const dl=$("vendorList"); vs.forEach(v=>dl.appendChild(new Option(v,v)));
-  const label = $("range").checked ? `${months[0]}~${months[months.length-1]}月` : `${months[0]}月`;
-  setAnnounce(`已載入：${y} 年 ${label}（共 ${data.length} 筆）`);
-  render(applyFilter());
+  vendors.sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+  fillVendorLists();
+  applyFilters();
+  renderVendorPage($("vendorPick").value.trim(), true);
 }
-function isOver(x){
-  if(manual[x.code]) return true;
-  const st=stock[x.code]; const u=x.u||0;
+
+function fillVendorLists(){
+  const dl1=$("vendorList"), dl2=$("vendorList2");
+  dl1.innerHTML=dl2.innerHTML="";
+  vendors.forEach(v=>{ dl1.appendChild(new Option(v,v)); dl2.appendChild(new Option(v,v)); });
+}
+
+function usage(x){ return Number(x.用量||0); }
+function isAnn(x){
+  if(manual[x.藥代]) return true;
+  const u=usage(x), st=stock[x.藥代];
   return u>0 && st!=null && st>u*6;
 }
-function tag(st,u,over){
-  if(over) return `<span class="tag tF">勿忘我</span>`;
-  if(st==null) return `<span class="tag tE">未輸入</span>`;
-  if(u>0 && st<u) return `<span class="tag tB">需採購</span>`;
-  return `<span class="tag tO">正常</span>`;
+function tag(st,u,ann){
+  if(ann) return `<span class="tag t3">公告</span>`;
+  if(st==null) return `<span class="tag t0">未輸入</span>`;
+  if(u>0 && st<u) return `<span class="tag t2">需採購</span>`;
+  return `<span class="tag t1">正常</span>`;
 }
-function applyFilter(){
-  const v=$("vendor").value.trim();
-  const qc=$("qCode").value.trim();
-  const qn=$("qName").value.trim();
-  return data.filter(x=>{
-    if(v && !(x.vendor||"").includes(v)) return false;
-    if(qc && !(x.code||"").includes(qc)) return false;
-    if(qn && !(x.name||"").includes(qn)) return false;
-    return true;
-  });
+
+function applyFilters(){
+  const vq=$("vendorQ").value.trim();
+  const cq=$("codeQ").value.trim();
+  const nq=$("nameQ").value.trim();
+  lastFiltered=data.filter(x=>
+    (!vq || x.廠商.includes(vq)) &&
+    (!cq || String(x.藥代).includes(cq)) &&
+    (!nq || String(x.藥品).includes(nq))
+  );
+  renderMain(lastFiltered);
 }
-function render(list){
+
+function renderMain(list){
   const tb=$("tb"); tb.innerHTML="";
-  let over=0,need=0,ok=0;
+  let ann=0,buy=0,ok=0;
   list.forEach(x=>{
-    const st=stock[x.code]; const u=x.u||0; const overFlag=isOver(x);
-    if(overFlag) over++; if(st!=null && u>st) need++; else if(st!=null) ok++;
+    const u=usage(x), st=stock[x.藥代], annF=isAnn(x);
+    if(annF) ann++;
+    if(st!=null && u>st) buy++; else if(st!=null) ok++;
     const tr=document.createElement("tr");
     tr.innerHTML=`
-      <td>${x.vendor||""}</td>
-      <td>${x.code}</td>
-      <td>${x.name||""}</td>
+      <td>${x.藥代||""}</td>
+      <td>${x.藥品||""}</td>
       <td>${u}</td>
-      <td><div class="stock">
-        <div class="top">
-          <input type="number" inputmode="numeric" value="${st??""}">
-          ${tag(st,u,overFlag)}
-        </div>
-        <input class="note note-input" placeholder="備註" value="${notes[x.code]??""}">
-      </div></td>`;
+      <td><div class="stock"><div class="top">
+        <input type="number" inputmode="numeric" value="${st??""}">
+        ${tag(st,u,annF)}
+      </div><input class="note" placeholder="備註" value="${notes[x.藥代]??""}"></div></td>
+      <td>${x.廠商||""}</td>`;
     const [inp,ninp]=tr.querySelectorAll("input");
-    inp.oninput=()=>{ stock[x.code]=inp.value===""?null:+inp.value; localStorage.setItem(STOCK,JSON.stringify(stock)); render(list); };
-    ninp.oninput=()=>{ notes[x.code]=ninp.value; localStorage.setItem(NOTE,JSON.stringify(notes)); };
+    inp.oninput=()=>{ stock[x.藥代]=inp.value===""?null:+inp.value; localStorage.setItem(STOCK,JSON.stringify(stock)); renderMain(list); };
+    ninp.oninput=()=>{ notes[x.藥代]=ninp.value; localStorage.setItem(NOTE,JSON.stringify(notes)); };
     tb.appendChild(tr);
   });
-  $("c0").textContent=`共 ${list.length}`;
-  $("c1").textContent=`需採購 ${need}`;
-  $("c2").textContent=`正常 ${ok}`;
-  $("c3").textContent=`公告(勿忘我) ${over}`;
-  // ✅ 勿忘我只用公告呈現（不再出清單）
-  if(over){
-    const y=$("year").value;
-    const months=$("range").checked?rangeMonths():[+$("m1").value];
-    const label=$("range").checked?`${months[0]}~${months[months.length-1]}月`:`${months[0]}月`;
-    setAnnounce(`📣 ${y} 年 ${label}：勿忘我 ${over} 筆（庫存過高/人工標記）`);
-  }
-}
-function shift(d){
-  let m=+$("m1").value; m+=d; if(m<1)m=1; if(m>12)m=12;
-  $("m1").value=m; if(!$("range").checked) load();
-}
-$("range").onchange=()=>{ $("rangeUI").style.display=$("range").checked?"inline-flex":"none"; if(!$("range").checked) $("m2").value=$("m1").value; load(); };
-$("m1").onchange=()=>{ if(!$("range").checked) load(); else render(applyFilter()); };
-$("m2").onchange=()=>{ if($("range").checked) load(); };
-$("prev").onclick=()=>shift(-1); $("next").onclick=()=>shift(1);
-$("reload").onclick=load;
-$("doFilter").onclick=()=>render(applyFilter());
-$("clear").onclick=()=>{ $("vendor").value="";$("qCode").value="";$("qName").value=""; render(applyFilter()); setAnnounce($("announce").textContent); };
-$("reset").onclick=()=>{ localStorage.removeItem(STOCK);localStorage.removeItem(MANUAL);localStorage.removeItem(NOTE); location.reload(); };
+  $("cAll").textContent=`共 ${list.length}`;
+  $("cBuy").textContent=`需採購 ${buy}`;
+  $("cOk").textContent=`正常 ${ok}`;
+  $("cAnn").textContent=`公告 ${ann}`;
 
-initYM(); load();
+  // ✅ 全部改成「公告」：只顯示公告條，不再顯示任何清單區塊
+  if(ann){
+    $("notice").style.display="block";
+    $("notice").textContent=`📣 公告 ${ann} 筆（點此前往廠商頁）`;
+  }else $("notice").style.display="none";
+}
+
+async function loadYear(){
+  const y=$("year2").value;
+  const map=new Map(); let any=0;
+  for(let m=1;m<=12;m++){
+    try{
+      const r=await fetch(file(y,m),{cache:"no-store"}); if(!r.ok) continue;
+      any++; const rows=await r.json();
+      rows.forEach(x=>{
+        const code=x["藥代"], name=x["藥品"], use=Number(x["月用量"]||0);
+        const vRaw=(x["廠商"]||x["供應商"]||x["藥商"]||"").trim();
+        const vend=normVendor(vRaw)||normVendor(name)||"";
+        const k=code;
+        if(!map.has(k)) map.set(k,{藥代:code,藥品:name,廠商:vend,用量:0});
+        map.get(k).用量+=use;
+      });
+    }catch{}
+  }
+  const arr=[...map.values()].sort((a,b)=>String(a.藥代).localeCompare(String(b.藥代)));
+  $("yInfo").textContent=`有資料月份：${any} / 12`;
+  const tb=$("yTb"); tb.innerHTML="";
+  arr.forEach(x=>{
+    const u=usage(x), st=stock[x.藥代], annF=isAnn(x);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${x.藥代}</td><td>${x.藥品}</td><td>${u}</td><td>${st??""}</td><td>${x.廠商||""}</td>`;
+    tb.appendChild(tr);
+  });
+  setView("vYear");
+}
+
+function renderVendorPage(v, silent){
+  if(!v){ if(!silent) setView("vVendor"); return; }
+  const list=(lastFiltered.length?lastFiltered:data).filter(x=>x.廠商===normVendor(v) || x.廠商===v);
+  const tb=$("vTb"); tb.innerHTML="";
+  list.forEach(x=>{
+    const u=usage(x), st=stock[x.藥代], annF=isAnn(x);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${x.藥代}</td><td>${x.藥品}</td><td>${u}</td><td>${st??""}</td><td>${x.廠商||""}</td>`;
+    tb.appendChild(tr);
+  });
+  if(!silent){ $("vendorPick").value=normVendor(v)||v; setView("vVendor"); }
+}
+
+function exportExcelLike(){
+  // 以 CSV 匯出（Excel 可直接開），內容以「目前畫面篩選結果」為準
+  const y=$("year").value, s=+$("m1").value, e=$("adv").checked?+$("m2").value:s;
+  const a=Math.min(s,e), b=Math.max(s,e);
+  const rows=(lastFiltered.length?lastFiltered:data);
+  const head=["藥代","藥品","用量","庫存","廠商","公告","備註"];
+  const csv=[head.join(",")].concat(rows.map(x=>{
+    const u=usage(x), st=stock[x.藥代], ann=isAnn(x)?"是":"";
+    const note=(notes[x.藥代]||"").replaceAll('"','""');
+    return [x.藥代,x.藥品,u,(st??""),x.廠商,ann,`"${note}"`].join(",");
+  })).join("\n");
+  const bom="\uFEFF"; // 防中文亂碼
+  const blob=new Blob([bom+csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const fn=`export_${y}_${String(a).padStart(2,"0")}${a===b?"":"-"+String(b).padStart(2,"0")}.csv`;
+  const aTag=document.createElement("a"); aTag.href=url; aTag.download=fn; aTag.click();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+
+init();
 })();
 </script>
 </body></html>
