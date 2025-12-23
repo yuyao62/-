@@ -5,39 +5,109 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>藥品採購查詢系統</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-/* 保持原本樣式 */
-html, body { max-width:100%; overflow-x:hidden; margin:0; padding:0; font-size:16px; background:#f3f4f6; color:#111827; }
-* { box-sizing:border-box; max-width:100%; }
-.app{ width:min(1100px,100%); margin:16px auto; background:#fff; padding:16px; border-radius:16px; box-shadow:0 12px 28px rgba(0,0,0,.12); }
+/* =================================================
+   ✅ 手機版最優先：禁止任何橫向捲動（最終定案）
+   ================================================= */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  background: #f3f4f6;
+  color: #111827;
+}
+* { box-sizing: border-box; max-width: 100%; }
+
+/* =================================================
+   基本版面
+   ================================================= */
+.app{
+  width: min(1100px, 100%);
+  margin: 16px auto;
+  background: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.12);
+}
 h1{ text-align:center; margin:0 0 8px; }
 .subtitle{ text-align:center; color:#6b7280; font-size:14px; margin-bottom:12px; }
+
 .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
 label{ font-weight:800; }
-input, select, button{ font-size:16px; padding:8px 12px; border-radius:999px; border:1px solid #d1d5db; max-width:100%; }
+input, select, button{
+  font-size:16px; padding:8px 12px; border-radius:999px;
+  border:1px solid #d1d5db; max-width:100%;
+}
 button{ background:#4f46e5; color:#fff; font-weight:800; border:none; cursor:pointer; }
 .secondary-btn{ background:#111827; }
 .ghost-btn{ background:#e5e7eb; color:#111827; }
-#overNotice{ display:none; margin-bottom:12px; padding:10px 14px; border-radius:14px; background:#ede9fe; color:#4c1d95; font-weight:900; cursor:pointer; }
+
+/* =================================================
+   勿忘我公告條
+   ================================================= */
+#overNotice{
+  display:none; margin-bottom:12px; padding:10px 14px;
+  border-radius:14px; background:#ede9fe; color:#4c1d95;
+  font-weight:900; cursor:pointer;
+}
 #overNotice:hover{ background:#ddd6fe; }
+
+/* =================================================
+   統計 pill
+   ================================================= */
 .pill{ padding:4px 12px; border-radius:999px; font-size:14px; font-weight:800; }
 .pill-total{ background:#dbeafe; }
 .pill-buy{ background:#fee2e2; color:#991b1b; }
 .pill-ok{ background:#dcfce7; color:#166534; }
 .pill-over{ background:#ede9fe; color:#4c1d95; }
+
+/* =================================================
+   表格（手機不卡寬）
+   ================================================= */
 .table-wrap{ width:100%; overflow-x:hidden; }
 table{ width:100%; border-collapse:collapse; table-layout:fixed; }
 th, td{ padding:8px; vertical-align:top; word-break:break-word; }
 th{ background:#e5e7eb; }
 tr:nth-child(even) td{ background:#f3f4f6; }
+
+/* =================================================
+   標籤
+   ================================================= */
 .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-weight:800; font-size:14px; }
 .tag-empty{ background:#e5e7eb; }
 .tag-ok{ background:#dcfce7; color:#166534; }
 .tag-buy{ background:#fee2e2; color:#991b1b; }
 .tag-over{ background:#ede9fe; color:#5b21b6; }
+
+/* =================================================
+   庫存欄位（庫存＋備註＋手動勿忘我）
+   ================================================= */
 .stock-wrap{ display:flex; flex-direction:column; gap:6px; }
 .stock-top{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
-.note-input{ width:100%; padding:6px 10px; border-radius:10px; border:1px solid #d1d5db; font-size:14px; }
+.note-input{
+  width:100%; padding:6px 10px; border-radius:10px;
+  border:1px solid #d1d5db; font-size:14px;
+}
+
+/* =================================================
+   手機版微調（仍然只有上下滑）
+   ================================================= */
+@media (max-width:520px){
+  .app{ margin:0; border-radius:0; box-shadow:none; }
+  table, thead, tbody, tr, td, th{ display:block; width:100%; }
+  thead{ display:none; }
+  tr{ background:#fff; border-radius:14px; padding:10px; margin-bottom:10px; }
+  td{ padding:4px 0; }
+  td::before{ font-weight:900; color:#6b7280; display:block; margin-bottom:2px; }
+  td:nth-child(1)::before{ content:"藥代"; }
+  td:nth-child(2)::before{ content:"藥品"; }
+  td:nth-child(3)::before{ content:"用量"; }
+  td:nth-child(4)::before{ content:"庫存"; }
+}
 </style>
 </head>
 <body>
@@ -48,10 +118,6 @@ tr:nth-child(even) td{ background:#f3f4f6; }
   <div id="overNotice"></div>
 
   <div class="row">
-    <button id="resetBtn" class="ghost-btn">重置</button>
-  </div>
-
-  <div class="row">
     <label>年份</label>
     <select id="yearSelect"></select>
     <label>月份</label>
@@ -59,21 +125,13 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     到
     <select id="endMonth"></select>
     <button id="reloadBtn" class="secondary-btn">重新載入</button>
-    <button id="filterNeedBtn" class="ghost-btn">只看需採購</button>
+    <button id="resetBtn" class="ghost-btn">重置</button>
   </div>
 
   <div class="row">
     <label>搜尋藥品</label>
     <input id="searchInput" placeholder="輸入藥代或藥品名稱">
     <button id="searchBtn">搜尋</button>
-  </div>
-
-  <div class="row">
-    <label>搜尋廠商</label>
-    <select id="vendorSelect">
-      <option value="">--選擇廠商--</option>
-    </select>
-    <button id="vendorSearchBtn">搜尋</button>
   </div>
 
   <div class="row">
@@ -98,11 +156,10 @@ tr:nth-child(even) td{ background:#f3f4f6; }
   </div>
 
   <div id="overList" style="margin-top:16px; display:none;">
-    <h3>🌸 公告清單</h3>
+    <h3>🌸 勿忘我清單</h3>
     <ul id="overListBody"></ul>
   </div>
 </div>
-
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -147,7 +204,7 @@ tr:nth-child(even) td{ background:#f3f4f6; }
         rows.forEach(x=>{
           let rec = rawData.find(r=>r.藥代===x["藥代"]);
           if(!rec){
-            rec = {藥代:x["藥代"], 藥品:x["藥品"], 廠商:x["廠商"]};
+            rec = {藥代:x["藥代"], 藥品:x["藥品"]};
             rawData.push(rec);
           }
           rec[`m${m}`] = Number(x["月用量"]||0);
@@ -155,10 +212,9 @@ tr:nth-child(even) td{ background:#f3f4f6; }
       }catch{}
     }
     render();
-    populateVendors();
   }
 
-  function usage(x){
+   function usage(x){
     let s=+$("startMonth").value, e=+$("endMonth").value, sum=0;
     for(let i=s;i<=e;i++) sum += x[`m${i}`]||0;
     return sum;
@@ -171,17 +227,7 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     return u>0 && st!=null && st>u*6;
   }
 
-  function populateVendors(){
-    const vendorSet = new Set(rawData.map(x => x.廠商).filter(Boolean));
-    const select = $("vendorSelect");
-    select.innerHTML = '<option value="">--選擇廠商--</option>';
-    vendorSet.forEach(v=>{
-      const opt = new Option(v, v);
-      select.appendChild(opt);
-    });
-  }
-
-   function render(){
+  function render(){
     const tb = $("drugBody");
     tb.innerHTML = "";
     let over=0, need=0, ok=0;
@@ -203,11 +249,9 @@ tr:nth-child(even) td{ background:#f3f4f6; }
           <div class="stock-wrap">
             <div class="stock-top">
               <input type="number" value="${st??""}">
-              ${overFlag ? '<span class="tag tag-over">庫存過高</span>' :
-               st == null ? '<span class="tag tag-empty">未輸入</span>' :
-               u > st ? '<span class="tag tag-buy">需採購</span>' :
-               '<span class="tag tag-ok">正常</span>'}
-
+              ${overFlag?'<span class="tag tag-over">庫存過高</span>':
+                st==null?'<span class="tag tag-empty">未輸入</span>':
+                '<span class="tag tag-ok">正常</span>'}
             </div>
             <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
           </div>
@@ -231,11 +275,11 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     $("totalCount").textContent = `共 ${rawData.length}`;
     $("needBuyCount").textContent = `需採購 ${need}`;
     $("okCount").textContent = `正常 ${ok}`;
-    $("overCount").textContent = `公告 ${over}`;
+    $("overCount").textContent = `勿忘我 ${over}`;
 
     if(over){
       $("overNotice").style.display="block";
-      $("overNotice").textContent = `🌸 公告 ${over} 筆`;
+      $("overNotice").textContent = `🌸 勿忘我 ${over} 筆`;
     }else{
       $("overNotice").style.display="none";
     }
@@ -255,108 +299,44 @@ tr:nth-child(even) td{ background:#f3f4f6; }
       $("overList").style.display = "none";
     }
   }
-  // 搜尋功能（藥代/藥品）
-  $("searchBtn").onclick = () => {
+  // 搜尋功能
+  $("searchBtn").onclick = ()=>{
     const keyword = $("searchInput").value.trim();
     if(!keyword){ render(); return; }
     const tb = $("drugBody");
     tb.innerHTML = "";
-
-    rawData.filter(x=>{
-      return x.藥代.includes(keyword) || x.藥品.includes(keyword);
-    }).forEach(x=>{
-      const u = usage(x);
-      const st = stock[x.藥代];
-      const overFlag = isOver(x);
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${x.藥代}</td>
-        <td>${x.藥品}</td>
-        <td>${u}</td>
-        <td>
-          <div class="stock-wrap">
-            <div class="stock-top">
-              <input type="number" value="${st??""}">
-              ${overFlag?'<span class="tag tag-over">庫存過高</span>':
-                st==null?'<span class="tag tag-empty">未輸入</span>':
-                '<span class="tag tag-ok">正常</span>'}
+    rawData.filter(x=>x.藥代.includes(keyword) || x.藥品.includes(keyword))
+      .forEach(x=>{
+        const u = usage(x);
+        const st = stock[x.藥代];
+        const overFlag = isOver(x);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${x.藥代}</td>
+          <td>${x.藥品}</td>
+          <td>${u}</td>
+          <td>
+            <div class="stock-wrap">
+              <div class="stock-top">
+                <input type="number" value="${st??""}">
+                ${overFlag?'<span class="tag tag-over">庫存過高</span>':
+                  st==null?'<span class="tag tag-empty">未輸入</span>':
+                  '<span class="tag tag-ok">正常</span>'}
+              </div>
+              <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
             </div>
-            <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
-          </div>
-        </td>
-      `;
-      tb.appendChild(tr);
-    });
-  };
-
-  // 廠商搜尋（下拉選單）
-  $("vendorSearchBtn").onclick = () => {
-    const vendor = $("vendorSelect").value;
-    if(!vendor){ render(); return; }
-    const tb = $("drugBody");
-    tb.innerHTML = "";
-
-    rawData.filter(x => x.廠商 === vendor).forEach(x=>{
-      const u = usage(x);
-      const st = stock[x.藥代];
-      const overFlag = isOver(x);
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${x.藥代}</td>
-        <td>${x.藥品}</td>
-        <td>${u}</td>
-        <td>
-          <div class="stock-wrap">
-            <div class="stock-top">
-              <input type="number" value="${st??""}">
-              ${overFlag?'<span class="tag tag-over">庫存過高</span>':
-                st==null?'<span class="tag tag-empty">未輸入</span>':
-                '<span class="tag tag-ok">正常</span>'}
-            </div>
-            <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
-          </div>
-        </td>
-      `;
-      tb.appendChild(tr);
-    });
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
   };
 
   // 重置功能
-  $("resetBtn").onclick = () => {
+  $("resetBtn").onclick = ()=>{
     localStorage.removeItem(STOCK_KEY);
     localStorage.removeItem(MANUAL_KEY);
     localStorage.removeItem(NOTE_KEY);
     location.reload();
-  };
-
-  // 只看需採購
-  $("filterNeedBtn").onclick = () => {
-    const tb = $("drugBody");
-    tb.innerHTML = "";
-    rawData.filter(x => {
-      const u = usage(x);
-      const st = stock[x.藥代];
-      return st!=null && u > st;
-    }).forEach(x => {
-      const u = usage(x);
-      const st = stock[x.藥代];
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${x.藥代}</td>
-        <td>${x.藥品}</td>
-        <td>${u}</td>
-        <td>
-          <div class="stock-wrap">
-            <div class="stock-top">
-              <input type="number" value="${st??""}">
-              <span class="tag tag-buy">需採購</span>
-            </div>
-            <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
-          </div>
-        </td>
-      `;
-      tb.appendChild(tr);
-    });
   };
 
   $("reloadBtn").onclick = loadData;
@@ -370,3 +350,4 @@ tr:nth-child(even) td{ background:#f3f4f6; }
 </script>
 </body>
 </html>
+
