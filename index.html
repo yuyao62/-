@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>藥品採購查詢系統</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
+/* =================================================
+   ✅ 手機版最優先：禁止任何橫向捲動（最終定案）
+   ================================================= */
 html, body {
   max-width: 100%;
   overflow-x: hidden;
@@ -17,6 +22,9 @@ html, body {
 }
 * { box-sizing: border-box; max-width: 100%; }
 
+/* =================================================
+   基本版面
+   ================================================= */
 .app{
   width: min(1100px, 100%);
   margin: 16px auto;
@@ -38,6 +46,9 @@ button{ background:#4f46e5; color:#fff; font-weight:800; border:none; cursor:poi
 .secondary-btn{ background:#111827; }
 .ghost-btn{ background:#e5e7eb; color:#111827; }
 
+/* =================================================
+   勿忘我公告條
+   ================================================= */
 #overNotice{
   display:none; margin-bottom:12px; padding:10px 14px;
   border-radius:14px; background:#ede9fe; color:#4c1d95;
@@ -45,27 +56,46 @@ button{ background:#4f46e5; color:#fff; font-weight:800; border:none; cursor:poi
 }
 #overNotice:hover{ background:#ddd6fe; }
 
+/* =================================================
+   統計 pill
+   ================================================= */
 .pill{ padding:4px 12px; border-radius:999px; font-size:14px; font-weight:800; }
 .pill-total{ background:#dbeafe; }
 .pill-buy{ background:#fee2e2; color:#991b1b; }
 .pill-ok{ background:#dcfce7; color:#166534; }
 .pill-over{ background:#ede9fe; color:#4c1d95; }
 
+/* =================================================
+   表格（手機不卡寬）
+   ================================================= */
 .table-wrap{ width:100%; overflow-x:hidden; }
 table{ width:100%; border-collapse:collapse; table-layout:fixed; }
 th, td{ padding:8px; vertical-align:top; word-break:break-word; }
 th{ background:#e5e7eb; }
 tr:nth-child(even) td{ background:#f3f4f6; }
 
+/* =================================================
+   標籤
+   ================================================= */
 .tag{ display:inline-block; padding:4px 10px; border-radius:999px; font-weight:800; font-size:14px; }
 .tag-empty{ background:#e5e7eb; }
 .tag-ok{ background:#dcfce7; color:#166534; }
 .tag-buy{ background:#fee2e2; color:#991b1b; }
 .tag-over{ background:#ede9fe; color:#5b21b6; }
 
+/* =================================================
+   庫存欄位（庫存＋備註＋手動勿忘我）
+   ================================================= */
 .stock-wrap{ display:flex; flex-direction:column; gap:6px; }
 .stock-top{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.note-input{
+  width:100%; padding:6px 10px; border-radius:10px;
+  border:1px solid #d1d5db; font-size:14px;
+}
 
+/* =================================================
+   手機版微調（仍然只有上下滑）
+   ================================================= */
 @media (max-width:520px){
   .app{ margin:0; border-radius:0; box-shadow:none; }
   table, thead, tbody, tr, td, th{ display:block; width:100%; }
@@ -80,7 +110,6 @@ tr:nth-child(even) td{ background:#f3f4f6; }
 }
 </style>
 </head>
-
 <body>
 <div class="app">
   <h1>藥品採購查詢系統</h1>
@@ -96,6 +125,13 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     到
     <select id="endMonth"></select>
     <button id="reloadBtn" class="secondary-btn">重新載入</button>
+    <button id="resetBtn" class="ghost-btn">重置</button>
+  </div>
+
+  <div class="row">
+    <label>搜尋藥品</label>
+    <input id="searchInput" placeholder="輸入藥代或藥品名稱">
+    <button id="searchBtn">搜尋</button>
   </div>
 
   <div class="row">
@@ -119,7 +155,6 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     </table>
   </div>
 
-  <!-- 勿忘我清單 -->
   <div id="overList" style="margin-top:16px; display:none;">
     <h3>🌸 勿忘我清單</h3>
     <ul id="overListBody"></ul>
@@ -132,9 +167,11 @@ tr:nth-child(even) td{ background:#f3f4f6; }
 
   const STOCK_KEY = "drug_stock_v1";
   const MANUAL_KEY = "manual_over_v1";
+  const NOTE_KEY = "drug_note_v1";
 
   const stock = JSON.parse(localStorage.getItem(STOCK_KEY) || "{}");
   const manual = JSON.parse(localStorage.getItem(MANUAL_KEY) || "{}");
+  const notes = JSON.parse(localStorage.getItem(NOTE_KEY) || "{}");
 
   function initYear(){
     const y = new Date().getFullYear();
@@ -143,6 +180,7 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     o.selected = true;
     $("yearSelect").appendChild(o);
   }
+
   function initMonths(){
     for(let i=1;i<=12;i++){
       $("startMonth").appendChild(new Option(i,i));
@@ -152,6 +190,7 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     $("startMonth").value = m;
     $("endMonth").value = m;
   }
+
   const fileName = (y,m)=>`inventory_${y}_${String(m).padStart(2,"0")}.json`;
 
   async function loadData(){
@@ -175,11 +214,12 @@ tr:nth-child(even) td{ background:#f3f4f6; }
     render();
   }
 
-  function usage(x){
+    function usage(x){
     let s=+$("startMonth").value, e=+$("endMonth").value, sum=0;
     for(let i=s;i<=e;i++) sum += x[`m${i}`]||0;
     return sum;
   }
+
   function isOver(x){
     if(manual[x.藥代]) return true;
     const u = usage(x);
@@ -213,15 +253,20 @@ tr:nth-child(even) td{ background:#f3f4f6; }
                 st==null?'<span class="tag tag-empty">未輸入</span>':
                 '<span class="tag tag-ok">正常</span>'}
             </div>
+            <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
           </div>
         </td>
       `;
 
-      const inp = tr.querySelector("input");
+      const [inp, noteInp] = tr.querySelectorAll("input");
       inp.oninput = ()=>{
         stock[x.藥代] = inp.value===""?null:+inp.value;
         localStorage.setItem(STOCK_KEY, JSON.stringify(stock));
         render();
+      };
+      noteInp.oninput = ()=>{
+        notes[x.藥代] = noteInp.value;
+        localStorage.setItem(NOTE_KEY, JSON.stringify(notes));
       };
 
       tb.appendChild(tr);
@@ -254,6 +299,45 @@ tr:nth-child(even) td{ background:#f3f4f6; }
       $("overList").style.display = "none";
     }
   }
+  // 搜尋功能
+  $("searchBtn").onclick = ()=>{
+    const keyword = $("searchInput").value.trim();
+    if(!keyword){ render(); return; }
+    const tb = $("drugBody");
+    tb.innerHTML = "";
+    rawData.filter(x=>x.藥代.includes(keyword) || x.藥品.includes(keyword))
+      .forEach(x=>{
+        const u = usage(x);
+        const st = stock[x.藥代];
+        const overFlag = isOver(x);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${x.藥代}</td>
+          <td>${x.藥品}</td>
+          <td>${u}</td>
+          <td>
+            <div class="stock-wrap">
+              <div class="stock-top">
+                <input type="number" value="${st??""}">
+                ${overFlag?'<span class="tag tag-over">庫存過高</span>':
+                  st==null?'<span class="tag tag-empty">未輸入</span>':
+                  '<span class="tag tag-ok">正常</span>'}
+              </div>
+              <input class="note-input" placeholder="備註" value="${notes[x.藥代]??""}">
+            </div>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
+  };
+
+  // 重置功能
+  $("resetBtn").onclick = ()=>{
+    localStorage.removeItem(STOCK_KEY);
+    localStorage.removeItem(MANUAL_KEY);
+    localStorage.removeItem(NOTE_KEY);
+    location.reload();
+  };
 
   $("reloadBtn").onclick = loadData;
   $("startMonth").onchange = render;
@@ -266,3 +350,4 @@ tr:nth-child(even) td{ background:#f3f4f6; }
 </script>
 </body>
 </html>
+
