@@ -8,314 +8,75 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-html{ font-size:16px; }
-body{
-  margin:0;
-  background:#f3f4f6;
-  font-size:16px;
-  line-height:1.4;
-  color:#111827;
-}
-body.lock{ overflow:hidden; }
+html{font-size:16px}
+body{margin:0;background:#f3f4f6;color:#111827}
+body.lock{overflow:hidden}
+.app{max-width:1100px;margin:20px auto;background:#fff;padding:24px;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.12)}
+h1{text-align:center;margin:0}
+.subtitle{text-align:center;color:#6b7280;font-size:14px;margin-bottom:16px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+label{font-weight:800}
+input,select{padding:8px 14px;border-radius:999px;border:1px solid #d1d5db;font-size:16px}
+button{padding:8px 18px;border-radius:999px;border:none;font-weight:800;cursor:pointer;background:#4f46e5;color:#fff}
+.secondary-btn{background:#111827}
+.emergency-btn{background:#dc2626}
+.ghost-btn{background:#e5e7eb;color:#111827}
 
-.app{
-  width:min(1100px,100%);
-  background:#fff;
-  margin:20px auto;
-  padding:24px;
-  border-radius:20px;
-  box-shadow:0 18px 40px rgba(0,0,0,.12);
-}
+.pill{padding:4px 12px;border-radius:999px;font-weight:800;font-size:14px}
+.pill-total{background:#dbeafe}
+.pill-buy{background:#fee2e2}
+.pill-ok{background:#dcfce7}
+.pill-over{background:#ede9fe;color:#4c1d95}
 
-h1{ text-align:center; margin:0 0 6px; }
-.subtitle{ text-align:center; color:#6b7280; font-size:14px; margin-bottom:16px; }
+#overNotice{display:none;background:#ede9fe;color:#4c1d95;
+  padding:10px 14px;border-radius:14px;font-weight:900;cursor:pointer}
+#overNotice:hover{background:#ddd6fe}
 
-.row{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:12px; }
-label{ font-weight:800; }
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px}
+th{background:#e5e7eb}
+tr:nth-child(even) td{background:#f3f4f6}
 
-input, select{
-  padding:8px 14px;
-  border-radius:999px;
-  border:1px solid #d1d5db;
-  font-size:16px;
-  max-width:100%;
-}
+.tag{padding:4px 10px;border-radius:999px;font-weight:800;font-size:14px}
+.tag-ok{background:#dcfce7}
+.tag-buy{background:#fee2e2;color:#991b1b}
+.tag-over{background:#ede9fe;color:#5b21b6}
+.tag-empty{background:#e5e7eb}
 
-button{
-  padding:8px 18px;
-  border-radius:999px;
-  border:none;
-  background:#4f46e5;
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
-}
-.emergency-btn{ background:#dc2626; }
-.secondary-btn{ background:#111827; }
-.ghost-btn{ background:#e5e7eb; color:#111827; }
-.warn-pill{ background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
+.stock-wrap{display:flex;flex-direction:column;gap:6px}
+.stock-top{display:flex;gap:6px;align-items:center}
+.note-input{border-radius:10px;padding:6px 10px;border:1px solid #d1d5db}
+.note-del{display:none;background:#ef4444;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:900}
+body.admin .note-del{display:inline-block}
 
-.pill{ padding:4px 12px; border-radius:999px; font-size:14px; font-weight:800; }
-.pill-total{ background:#dbeafe; color:#1e3a8a; }
-.pill-buy{ background:#fee2e2; color:#991b1b; }
-.pill-ok{ background:#dcfce7; color:#166534; }
-.pill-over{ background:#ede9fe; color:#5b21b6; border:1px solid #ddd6fe; }
-
-.table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-table{ width:100%; border-collapse:collapse; font-size:16px; }
-th{ background:#e5e7eb; padding:8px; position:sticky; top:0; }
-td{ padding:6px 8px; vertical-align:middle; }
-tr:nth-child(even) td{ background:#f3f4f6; }
-td.col-stock input{ width:80px; text-align:center; border-radius:10px; }
-
-.tag{
-  display:inline-block;
-  padding:4px 10px;
-  border-radius:999px;
-  font-weight:800;
-  font-size:14px;
-}
-.tag-empty{ background:#e5e7eb; }
-.tag-buy{ background:#fee2e2; color:#b91c1c; }
-.tag-ok{ background:#dcfce7; color:#166534; }
-.tag-over{ background:#ede9fe; color:#5b21b6; border:1px solid #ddd6fe; }
-
-/* 庫存格內：庫存+標籤 + 備註（共存） */
-.stock-wrap{ display:flex; flex-direction:column; gap:6px; }
-.stock-top{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.note-row{ display:flex; gap:6px; align-items:center; }
-.note-input{
-  flex:1;
-  border-radius:10px;
-  border:1px solid #d1d5e0;
-  padding:6px 10px;
-  font-size:14px;
-}
-.note-del{
-  display:none;
-  border:none;
-  border-radius:10px;
-  padding:6px 10px;
-  cursor:pointer;
-  background:#ef4444;
-  color:#fff;
-  font-weight:900;
-}
-body.admin .note-del{ display:inline-block; }
-
-@media (max-width:520px){
-  .app{ width:100%; margin:0; padding:12px; border-radius:0; box-shadow:none; }
-  h1{ font-size:26px; }
-  .subtitle{ font-size:12px; }
-
-  .table-wrap{ overflow:visible; }
-  table{ width:100%; border-collapse:separate; border-spacing:0 8px; }
-  thead{ display:none; }
-
-  tr{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) 150px;
-    grid-template-areas:
-      "code right"
-      "drug right"
-      "usage right";
-    gap:4px 8px;
-    background:#fff;
-    border-radius:14px;
-    padding:10px;
-    max-width:100%;
-    overflow:hidden;
-    font-size:16px;
-  }
-
-  td{ padding:0; white-space:normal; min-width:0; }
-  td.col-code{ grid-area:code; font-weight:900; font-size:16px; }
-  td.col-drug{
-    grid-area:drug; font-weight:700; line-height:1.3;
-    font-size:16px;
-    overflow-wrap:anywhere; word-break:break-word;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-  }
-  td.col-usage{ grid-area:usage; font-weight:800; color:#374151; font-size:16px; }
-  td.col-stock{
-    grid-area:right;
-    display:flex;
-    align-items:flex-start;
-    justify-content:flex-end;
-    min-width:0; max-width:100%;
-  }
-  td.col-status{ display:none; }
-
-  td.col-stock .stock-wrap{ width:100%; }
-  td.col-stock .stock-top{ justify-content:flex-end; }
-  td.col-stock .stock-top input{
-    width:68px; max-width:100%; min-height:36px; font-size:16px; text-align:center;
-    touch-action:manipulation;
-  }
-  td.col-stock .tag{
-    max-width:110px;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    font-size:14px;
-    padding:4px 6px;
-  }
-  td.col-stock .note-input{ font-size:14px; padding:6px 10px; }
-  #searchInput{ font-size:16px; padding:10px 16px; }
-}
-
-/* ===== modal ===== */
-.modal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:radial-gradient(circle at top,#7f1d1d,#000);
-  color:#fff;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-}
-.modal h1{ font-size:44px; margin:0 0 16px; }
-.modal button{
-  width:min(360px, 90vw);
-  padding:14px 18px;
-  font-size:18px;
-  border-radius:14px;
-}
-
-/* ===== 需採購清單 / 庫存過高清單：獨立畫面 ===== */
-.fullscreen{
-  display:none;
-  height:100dvh;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  background:#0b1220;
-  color:#fff;
-  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
-}
-.panel{ width:min(980px, 100%); margin:0 auto; }
-.head{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:10px;
-  justify-content:space-between;
-  margin-bottom:12px;
-}
-.title{ font-size:22px; font-weight:900; }
-.sub{ color:#cbd5e1; font-size:14px; margin-top:4px; }
-.actions{ display:flex; flex-wrap:wrap; gap:10px; }
-
-.vendor-group{
-  margin:14px 0 6px;
-  padding:6px 10px;
-  border-radius:10px;
-  background:#020617;
-  font-weight:900;
-  font-size:16px;
-  color:#e5e7eb;
-  letter-spacing:.5px;
-}
-
-.line{
-  display:grid;
-  grid-template-columns:84px 1fr auto;
-  gap:10px;
-  align-items:center;
-  padding:8px 10px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  background:rgba(17,24,39,.35);
-  border-radius:12px;
-  margin-bottom:8px;
-}
-.code{ font-weight:900; font-size:16px; color:#e5e7eb; }
-.drug{
-  font-weight:800;
-  font-size:16px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.meta{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight:900;
-  white-space:nowrap;
-  font-size:16px;
-}
-.badge-buy{
-  display:inline-block;
-  padding:4px 10px;
-  border-radius:999px;
-  background:#fecaca;
-  color:#7f1d1d;
-  font-size:14px;
-  font-weight:900;
-}
-.badge-over{
-  display:inline-block;
-  padding:4px 10px;
-  border-radius:999px;
-  background:#ddd6fe;
-  color:#4c1d95;
-  font-size:14px;
-  font-weight:900;
-}
-
-@media (max-width:700px){
-  .line{
-    grid-template-columns:76px 1fr;
-    grid-template-areas:
-      "code meta"
-      "drug drug";
-    gap:6px 10px;
-    padding:10px;
-  }
-  .code{ grid-area:code; }
-  .meta{ grid-area:meta; justify-content:flex-end; }
-  .drug{ grid-area:drug; white-space:normal; line-height:1.3; }
-}
+.fullscreen{display:none;height:100dvh;background:#0b1220;color:#fff;overflow:auto;padding:16px}
+.panel{max-width:980px;margin:auto}
+.vendor-group{background:#020617;padding:6px 10px;border-radius:10px;margin-top:16px;font-weight:900}
+.line{background:rgba(17,24,39,.4);padding:10px;border-radius:12px;margin-bottom:8px}
+.badge-over{background:#ddd6fe;color:#4c1d95;padding:4px 10px;border-radius:999px;font-weight:900}
 </style>
 </head>
 
 <body>
+
 <div class="app" id="mainApp">
   <h1>藥品採購查詢系統</h1>
-  <div class="subtitle">每月一檔：inventory_YYYY_MM.json｜可算單月/多月累加（例：9→11 = 9+10+11）</div>
+  <div class="subtitle">每月一檔 inventory_YYYY_MM.json</div>
+
+  <div id="overNotice"></div>
 
   <div class="row">
-    <label>年份：</label>
-    <select id="yearSelect"></select>
-
-    <label style="margin-left:6px;">用量區間：</label>
-    <select id="startMonth"></select>
-    <span style="font-weight:900;color:#374151;">到</span>
+    <label>年份</label><select id="yearSelect"></select>
+    <label>用量</label>
+    <select id="startMonth"></select> 到
     <select id="endMonth"></select>
-
-    <button id="reloadBtn" class="secondary-btn">重新載入月份檔</button>
-    <label style="margin-left:auto;"><input type="checkbox" id="adminMode"> 管理者模式</label>
-  </div>
-
-  <div class="row">
-    <span class="pill warn-pill" id="missingFilesPill" style="display:none;"></span>
-  </div>
-
-  <div class="row">
-    <label>廠商：</label>
-    <select id="vendorSelect"><option value="">全部</option></select>
-  </div>
-
-  <div class="row">
-    <label>搜尋：</label>
-    <input id="searchInput" style="flex:1" placeholder="輸入就會自動查（藥代 / 藥名 / 廠商）">
+    <button id="reloadBtn" class="secondary-btn">重新載入</button>
+    <label><input type="checkbox" id="adminMode"> 管理者</label>
   </div>
 
   <div class="row">
     <button id="resetBtn">重置</button>
-    <button id="emergencyBtn" class="emergency-btn">緊急</button>
-    <label><input type="checkbox" id="needBuyOnly"> 只顯示需採購（勾選自動跳頁）</label>
-
-    <button id="openBuyScreenBtn" class="secondary-btn">需採購清單（另一畫面）</button>
-    <button id="openOverScreenBtn" class="secondary-btn">庫存過高清單（另一畫面）</button>
+    <button id="openOverBtn" class="secondary-btn">🌸 勿忘我清單</button>
   </div>
 
   <div class="row">
@@ -325,743 +86,156 @@ body.admin .note-del{ display:inline-block; }
     <span class="pill pill-over" id="overCount"></span>
   </div>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>藥代</th>
-          <th>藥品</th>
-          <th id="usageHead">用量</th>
-          <th>庫存</th>
-          <th>狀態</th>
-        </tr>
-      </thead>
-      <tbody id="drugBody"></tbody>
-    </table>
-  </div>
-
-  <canvas id="chart" height="180"></canvas>
+  <table>
+    <thead>
+      <tr><th>藥代</th><th>藥品</th><th>用量</th><th>庫存</th></tr>
+    </thead>
+    <tbody id="drugBody"></tbody>
+  </table>
 </div>
 
-<!-- 需採購清單 -->
-<div id="buyScreen" class="fullscreen">
-  <div class="panel">
-    <div class="head">
-      <div>
-        <div class="title">🧾 需採購清單</div>
-        <div class="sub" id="buyMeta"></div>
-      </div>
-      <div class="actions">
-        <button id="backBtn" class="ghost-btn">返回主畫面</button>
-        <button id="saveCSVBtn" class="secondary-btn">存檔 CSV</button>
-        <button id="saveJSONBtn" class="secondary-btn">存檔 JSON</button>
-      </div>
-    </div>
-    <div id="buyList"></div>
-  </div>
-</div>
-
-<!-- 庫存過高清單（勿忘我統計） -->
 <div id="overScreen" class="fullscreen">
   <div class="panel">
-    <div class="head">
-      <div>
-        <div class="title">🌸 勿忘我｜庫存過高清單</div>
-        <div class="sub" id="overMeta"></div>
-      </div>
-      <div class="actions">
-        <button id="overBackBtn" class="ghost-btn">返回主畫面</button>
-      </div>
-    </div>
+    <button class="ghost-btn" id="backBtn">返回</button>
+    <h2>🌸 勿忘我｜庫存過高清單</h2>
     <div id="overList"></div>
   </div>
 </div>
 
-<div id="emergencyModal" class="modal">
-  <div style="text-align:center; padding: 16px">
-    <h1>⚠️ 請洽店長</h1>
-    <button onclick="document.getElementById('emergencyModal').style.display='none'">我知道了</button>
-  </div>
-</div>
-
 <script>
-document.addEventListener("touchstart", ()=>{}, {passive:true});
-
 (() => {
-  let rawData = [];
-  let chart;
-  let missingFiles = [];
+const $ = id => document.getElementById(id);
+let rawData=[];
 
-  const $ = id => document.getElementById(id);
+/* ===== storage ===== */
+const STOCK_KEY="drug_stock_v1";
+const NOTE_KEY="drug_note_v1";
+const MANUAL_KEY="manual_over_v1";
 
-  // ===== 備註（和庫存共存）=====
-  const NOTE_KEY = "drug_note_v1";
-  function loadNotes(){
-    try{ return JSON.parse(localStorage.getItem(NOTE_KEY) || "{}"); }
-    catch(e){ return {}; }
+const getLS=k=>JSON.parse(localStorage.getItem(k)||"{}");
+const setLS=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+let stockLS=getLS(STOCK_KEY);
+let noteLS=getLS(NOTE_KEY);
+let manualLS=getLS(MANUAL_KEY);
+
+/* ===== UI ===== */
+function initYM(){
+  const y=new Date().getFullYear();
+  [y-1,y,y+1].forEach(v=>{
+    const o=new Option(v,v);$("yearSelect").appendChild(o);
+  });
+  for(let i=1;i<=12;i++){
+    $("startMonth").appendChild(new Option(i,i));
+    $("endMonth").appendChild(new Option(i,i));
   }
-  function saveNotes(obj){ localStorage.setItem(NOTE_KEY, JSON.stringify(obj)); }
-  let notes = loadNotes();
-  function getNote(code){ return String(notes[String(code)] ?? ""); }
-  function setNote(code, text){ notes[String(code)] = String(text ?? ""); saveNotes(notes); }
-  function deleteNote(code){ delete notes[String(code)]; saveNotes(notes); }
-
-  // ===== 檔名：inventory_YYYY_MM.json =====
-  function fileNameOf(year, month){
-    const mm = String(month).padStart(2,"0");
-    return `inventory_${year}_${mm}.json`;
-  }
-
-  const vendorKey = v => {
-    v = String(v||"");
-    return /^[A-Za-z]/.test(v) ? v.slice(0,5).toUpperCase() : v.slice(0,2);
-  };
-
-  const nowStamp = () => {
-    const d = new Date();
-    const pad = n => String(n).padStart(2,"0");
-    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-  };
-
-  function initYearMonthUI(){
-    const y = new Date().getFullYear();
-    $("yearSelect").innerHTML = "";
-    [y-1, y, y+1].forEach(yy=>{
-      const o = document.createElement("option");
-      o.value = yy;
-      o.textContent = `${yy} 年`;
-      if(yy === y) o.selected = true;
-      $("yearSelect").appendChild(o);
-    });
-
-    $("startMonth").innerHTML = "";
-    $("endMonth").innerHTML = "";
-    for(let m=1; m<=12; m++){
-      const o1 = document.createElement("option");
-      o1.value = m; o1.textContent = `${m}月`;
-      $("startMonth").appendChild(o1);
-
-      const o2 = document.createElement("option");
-      o2.value = m; o2.textContent = `${m}月`;
-      $("endMonth").appendChild(o2);
-    }
-    const nowM = new Date().getMonth()+1;
-    $("startMonth").value = String(nowM);
-    $("endMonth").value = String(nowM);
-  }
-
-  function updateUsageHead(){
-    const s = $("startMonth").value;
-    const e = $("endMonth").value;
-    $("usageHead").textContent = (s===e) ? `${s}月用量` : `${s}→${e}月累加`;
-  }
-
-  function pickUsageValue(rec){
-    const v = (rec["月用量"] ?? rec["用量"] ?? rec["使用量"] ?? rec["月使用量"]);
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function mergeMonthlyData(year, monthlyDatas){
-    const map = new Map();
-
-    monthlyDatas.forEach(({month, rows})=>{
-      rows.forEach(rec=>{
-        const code = String(rec["藥代"] ?? rec["代碼"] ?? rec["藥品代碼"] ?? "").trim();
-        if(!code) return;
-
-        if(!map.has(code)){
-          map.set(code, {
-            藥代: code,
-            藥品: rec["藥品"] ?? rec["藥名"] ?? rec["品名"] ?? "",
-            廠商: rec["廠商"] ?? rec["供應商"] ?? "",
-            庫存量: null,
-            需採購: false,
-            _用量合計: 0
-          });
-        }else{
-          const x = map.get(code);
-          if(!x.藥品 && (rec["藥品"]||rec["藥名"]||rec["品名"])) x.藥品 = rec["藥品"] ?? rec["藥名"] ?? rec["品名"];
-          if(!x.廠商 && (rec["廠商"]||rec["供應商"])) x.廠商 = rec["廠商"] ?? rec["供應商"];
-        }
-
-        const x = map.get(code);
-        x[`${month}月用量`] = pickUsageValue(rec);
-      });
-    });
-
-    return [...map.values()];
-  }
-
-  function monthRangeSum(x, startM, endM){
-    const getM = (m) => Number(x[`${m}月用量`] ?? 0) || 0;
-    let sum = 0;
-
-    if(startM <= endM){
-      for(let m=startM; m<=endM; m++) sum += getM(m);
-    }else{
-      for(let m=startM; m<=12; m++) sum += getM(m);
-      for(let m=1; m<=endM; m++) sum += getM(m);
-    }
-    return sum;
-  }
-
-  function currentUsage(x){
-    const s = Number($("startMonth").value);
-    const e = Number($("endMonth").value);
-    return monthRangeSum(x, s, e);
-  }
-
-  function updateNeedFlag(x){
-    const u = currentUsage(x);
-    const stock = x.庫存量;
-    x._用量合計 = u;
-    x.需採購 = (stock != null) && (u > stock);
-  }
-
-  function updateAllNeedFlags(){ rawData.forEach(updateNeedFlag); }
-
-  // ✅ 勿忘我規則（統計清單用）：庫存 >（目前用量 × 6）
-  function isOverStock(x){
-    if (x.庫存量 == null) return false;
-    const usage = Number(x._用量合計);
-    if(!Number.isFinite(usage) || usage <= 0) return false;
-    return x.庫存量 > (usage * 6);
-  }
-
-  function makeTag(x){
-    if(x.庫存量==null) return '<span class="tag tag-empty">未輸入</span>';
-    return x.需採購
-      ? '<span class="tag tag-buy">需採購</span>'
-      : '<span class="tag tag-ok">足夠</span>';
-  }
-
-  function makeOverTag(x){
-    return (x.庫存量!=null && isOverStock(x))
-      ? '<span class="tag tag-over">庫存過高</span>'
-      : '';
-  }
-
-  function renderStats(list){
-    const total = list.length;
-    const need = list.filter(x=>x.需採購).length;
-    const ok = list.filter(x=>x.庫存量!=null && !x.需採購).length;
-    const over = list.filter(x=>x.庫存量!=null && isOverStock(x)).length;
-
-    $("totalCount").textContent = `共 ${total} 筆`;
-    $("needBuyCount").textContent = `需採購 ${need} 筆`;
-    $("okCount").textContent = `庫存足夠 ${ok} 筆`;
-    $("overCount").textContent = `庫存過高 ${over} 筆`;
-
-    if(chart) chart.destroy();
-    chart = new Chart($("chart"),{
-      type:"pie",
-      data:{labels:["需採購","庫存足夠"],datasets:[{data:[need,ok]}]},
-      options:{responsive:true, maintainAspectRatio:false}
-    });
-  }
-
-  function render(list){
-    $("drugBody").innerHTML = "";
-    list.forEach(x=>{
-      updateNeedFlag(x);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="col-code">${x.藥代}</td>
-        <td class="col-drug">${x.藥品}</td>
-        <td class="col-usage">${x._用量合計}</td>
-        <td class="col-stock">
-          <div class="stock-wrap">
-            <div class="stock-top">
-              <input type="number" inputmode="numeric" value="${x.庫存量??""}">
-              ${makeTag(x)}
-              ${makeOverTag(x)}
-            </div>
-            <div class="note-row">
-              <input class="note-input" type="text" placeholder="備註" value="${getNote(x.藥代)}">
-              <button class="note-del" title="刪除備註">刪</button>
-            </div>
-          </div>
-        </td>
-        <td class="col-status"></td>
-      `;
-
-      // 庫存輸入
-      const stockInput = tr.querySelector(".stock-top input");
-      stockInput.addEventListener("input", ()=>{
-        x.庫存量 = stockInput.value==="" ? null : +stockInput.value;
-        updateNeedFlag(x);
-
-        // 重建標籤
-        const top = tr.querySelector(".stock-top");
-        top.querySelectorAll(".tag").forEach(el => el.remove());
-        top.insertAdjacentHTML("beforeend", makeTag(x) + makeOverTag(x));
-
-        persistStock();
-        renderStats(list);
-
-        // 若目前在清單畫面，保持同步
-        if (isBuyScreenOpen()) openBuyScreen();
-        if (isOverScreenOpen()) openOverScreen();
-      });
-
-      // 備註輸入
-      const noteInput = tr.querySelector(".note-input");
-      noteInput.addEventListener("input", ()=> setNote(x.藥代, noteInput.value));
-
-      // 管理者刪除備註
-      const delBtn = tr.querySelector(".note-del");
-      delBtn.addEventListener("click", ()=>{
-        if (!document.body.classList.contains("admin")) return;
-        deleteNote(x.藥代);
-        noteInput.value = "";
-        if (isOverScreenOpen()) openOverScreen();
-      });
-
-      $("drugBody").appendChild(tr);
-    });
-
-    renderStats(list);
-  }
-
-  function currentFilteredList(){
-    const kw = $("searchInput").value.toLowerCase();
-    const vSel = $("vendorSelect").value;
-    const needOnly = $("needBuyOnly").checked;
-
-    updateAllNeedFlags();
-
-    let list = rawData.filter(x=>{
-      if(vSel && vendorKey(x.廠商)!==vSel) return false;
-      if(!kw) return true;
-      return (
-        String(x.藥代).toLowerCase().includes(kw) ||
-        String(x.藥品).toLowerCase().includes(kw) ||
-        String(x.廠商).toLowerCase().includes(kw)
-      );
-    });
-
-    if(needOnly) list = list.filter(x=>x.需採購);
-    return list;
-  }
-
-  function filter(){
-    updateUsageHead();
-    const list = currentFilteredList();
-    render(list);
-  }
-
-  // ===== 導頁 =====
-  function isBuyScreenOpen(){ return $("buyScreen").style.display === "block"; }
-  function isOverScreenOpen(){ return $("overScreen").style.display === "block"; }
-
-  function showPage(page){
-    $("mainApp").style.display = "none";
-    $("buyScreen").style.display = "none";
-    $("overScreen").style.display = "none";
-    page.style.display = "block";
-    document.body.classList.add("lock");
-    page.scrollTop = 0;
-  }
-  function showMainPage(){
-    $("buyScreen").style.display = "none";
-    $("overScreen").style.display = "none";
-    $("mainApp").style.display = "block";
-    document.body.classList.remove("lock");
-    window.scrollTo(0, 0);
-  }
-
-  // ===== 需採購清單 =====
-  function getNeedBuyList(){
-    const kw = $("searchInput").value.toLowerCase();
-    const vSel = $("vendorSelect").value;
-
-    updateAllNeedFlags();
-
-    return rawData
-      .filter(x=>{
-        if(vSel && vendorKey(x.廠商)!==vSel) return false;
-        if(kw){
-          const hit =
-            String(x.藥代).toLowerCase().includes(kw) ||
-            String(x.藥品).toLowerCase().includes(kw) ||
-            String(x.廠商).toLowerCase().includes(kw);
-          if(!hit) return false;
-        }
-        return x.需採購;
-      })
-      .map(x=>{
-        const stock = (x.庫存量==null) ? 0 : x.庫存量;
-        const usage = currentUsage(x);
-        const suggest = Math.max(0, usage - Number(stock||0));
-        return {
-          藥代: x.藥代,
-          藥品: x.藥品,
-          廠商: x.廠商,
-          用量合計: usage,
-          庫存量: x.庫存量,
-          建議採購量: suggest
-        };
-      })
-      .sort((a,b)=>{
-        if(a.廠商 !== b.廠商) return String(a.廠商).localeCompare(String(b.廠商), "zh-Hant");
-        return (b.建議採購量 - a.建議採購量);
-      });
-  }
-
-  function openBuyScreen(){
-    const list = getNeedBuyList();
-    showPage($("buyScreen"));
-
-    const vSel = $("vendorSelect").value || "全部";
-    const kw = $("searchInput").value.trim() || "（無）";
-    const s = $("startMonth").value;
-    const e = $("endMonth").value;
-    const usageLabel = (s===e) ? `${s}月` : `${s}→${e}累加`;
-
-    const y = $("yearSelect").value;
-    $("buyMeta").textContent = `年份：${y}｜廠商：${vSel}｜關鍵字：${kw}｜用量：${usageLabel}｜共 ${list.length} 筆`;
-
-    const wrap = $("buyList");
-    wrap.innerHTML = "";
-
-    if(list.length === 0){
-      const empty = document.createElement("div");
-      empty.style.padding = "12px";
-      empty.style.background = "#111827";
-      empty.style.borderRadius = "12px";
-      empty.style.border = "1px solid rgba(255,255,255,.08)";
-      empty.innerHTML = `<div style="font-weight:900; font-size:16px">目前沒有需採購項目</div>
-                         <div style="color:#94a3b8; margin-top:6px">請先在主畫面輸入庫存，系統才會判斷需採購。</div>`;
-      wrap.appendChild(empty);
-      return;
-    }
-
-    let lastVendor = "";
-    list.forEach(x=>{
-      if(x.廠商 !== lastVendor){
-        const vg = document.createElement("div");
-        vg.className = "vendor-group";
-        vg.textContent = x.廠商 || "（未填廠商）";
-        wrap.appendChild(vg);
-        lastVendor = x.廠商;
-      }
-
-      const line = document.createElement("div");
-      line.className = "line";
-      line.innerHTML = `
-        <div class="code">${x.藥代}</div>
-        <div class="drug" title="${x.藥品}">${x.藥品}</div>
-        <div class="meta">
-          <span>用${x.用量合計}</span>
-          <span>庫${x.庫存量==null ? "—" : x.庫存量}</span>
-          <span class="badge-buy">缺${x.建議採購量}</span>
-        </div>
-      `;
-      wrap.appendChild(line);
-    });
-  }
-
-  // ===== 庫存過高清單（勿忘我統計）=====
-  function getOverStockList(){
-    const kw = $("searchInput").value.toLowerCase();
-    const vSel = $("vendorSelect").value;
-
-    updateAllNeedFlags();
-
-    return rawData
-      .filter(x=>{
-        if(vSel && vendorKey(x.廠商)!==vSel) return false;
-
-        if(kw){
-          const hit =
-            String(x.藥代).toLowerCase().includes(kw) ||
-            String(x.藥品).toLowerCase().includes(kw) ||
-            String(x.廠商).toLowerCase().includes(kw);
-          if(!hit) return false;
-        }
-
-        return (x.庫存量!=null) && isOverStock(x);
-      })
-      .map(x=>{
-        const usage = Number(x._用量合計) || 0;
-        const six = usage * 6;
-        const overBy = Math.max(0, Number(x.庫存量||0) - six);
-        return {
-          藥代: x.藥代,
-          藥品: x.藥品,
-          廠商: x.廠商,
-          用量: usage,
-          六個月基準: six,
-          庫存量: x.庫存量,
-          超過: overBy,
-          備註: getNote(x.藥代)
-        };
-      })
-      .sort((a,b)=>{
-        if(a.廠商 !== b.廠商) return String(a.廠商).localeCompare(String(b.廠商), "zh-Hant");
-        return (b.超過 - a.超過);
-      });
-  }
-
-  function openOverScreen(){
-    const list = getOverStockList();
-    showPage($("overScreen"));
-
-    const vSel = $("vendorSelect").value || "全部";
-    const kw = $("searchInput").value.trim() || "（無）";
-    const s = $("startMonth").value;
-    const e = $("endMonth").value;
-    const usageLabel = (s===e) ? `${s}月` : `${s}→${e}累加`;
-
-    const y = $("yearSelect").value;
-    $("overMeta").textContent =
-      `年份：${y}｜廠商：${vSel}｜關鍵字：${kw}｜用量：${usageLabel}｜規則：庫存 > 用量×6｜共 ${list.length} 筆`;
-
-    const wrap = $("overList");
-    wrap.innerHTML = "";
-
-    if(list.length === 0){
-      const empty = document.createElement("div");
-      empty.style.padding = "12px";
-      empty.style.background = "#111827";
-      empty.style.borderRadius = "12px";
-      empty.style.border = "1px solid rgba(255,255,255,.08)";
-      empty.innerHTML = `<div style="font-weight:900; font-size:16px">目前沒有庫存過高項目</div>
-                         <div style="color:#94a3b8; margin-top:6px">提示：用量為 0 的品項不會列入判斷。</div>`;
-      wrap.appendChild(empty);
-      return;
-    }
-
-    let lastVendor = "";
-    list.forEach(x=>{
-      if(x.廠商 !== lastVendor){
-        const vg = document.createElement("div");
-        vg.className = "vendor-group";
-        vg.textContent = x.廠商 || "（未填廠商）";
-        wrap.appendChild(vg);
-        lastVendor = x.廠商;
-      }
-
-      const line = document.createElement("div");
-      line.className = "line";
-      const note = x.備註 ? `｜註：${String(x.備註).replace(/</g,"&lt;")}` : "";
-      line.innerHTML = `
-        <div class="code">${x.藥代}</div>
-        <div class="drug" title="${x.藥品}">${x.藥品}</div>
-        <div class="meta">
-          <span>用${x.用量}</span>
-          <span>庫${x.庫存量==null ? "—" : x.庫存量}</span>
-          <span class="badge-over">超${x.超過}</span>
-        </div>
-      `;
-      if(note){
-        const sub = document.createElement("div");
-        sub.style.gridColumn = "1 / -1";
-        sub.style.color = "#cbd5e1";
-        sub.style.fontWeight = "800";
-        sub.style.marginTop = "6px";
-        sub.textContent = `備註：${x.備註}`;
-        line.appendChild(sub);
-      }
-      wrap.appendChild(line);
-    });
-  }
-
-  // ===== 下載 =====
-  function downloadFile(filename, mime, content){
-    const blob = new Blob([content], {type:mime});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function exportNeedBuyCSV(){
-    const list = getNeedBuyList().map(r => ({
-      ...r,
-      "超過6個月": (Number(r.庫存量 ?? 0) > Number(r.用量合計 ?? 0) * 6) ? "是" : "否"
-    }));
-
-    const header = ["藥代","藥品","廠商","用量合計","庫存量","建議採購量","超過6個月"];
-    const esc = v => {
-      const s = (v==null) ? "" : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-    };
-    const rows = [header.join(",")].concat(
-      list.map(x=> header.map(k=>esc(x[k])).join(","))
-    );
-    downloadFile(`需採購清單_${nowStamp()}.csv`, "text/csv;charset=utf-8", rows.join("\n"));
-  }
-
-  function exportNeedBuyJSON(){
-    const list = getNeedBuyList();
-    downloadFile(`需採購清單_${nowStamp()}.json`, "application/json;charset=utf-8", JSON.stringify(list, null, 2));
-  }
-
-  // ===== 庫存保存 =====
-  const STOCK_KEY = "drug_stock_v1";
-  function persistStock(){
-    const obj = {};
-    rawData.forEach(x=>{ obj[String(x.藥代)] = x.庫存量; });
-    localStorage.setItem(STOCK_KEY, JSON.stringify(obj));
-  }
-  function restoreStock(){
+  const m=new Date().getMonth()+1;
+  $("startMonth").value=m;$("endMonth").value=m;
+}
+
+/* ===== data ===== */
+const fileName=(y,m)=>`inventory_${y}_${String(m).padStart(2,"0")}.json`;
+
+async function loadData(){
+  const y=$("yearSelect").value;
+  rawData=[];
+  for(let m=1;m<=12;m++){
     try{
-      const obj = JSON.parse(localStorage.getItem(STOCK_KEY) || "{}");
-      rawData = rawData.map(x=>{
-        const v = obj[String(x.藥代)];
-        const stock = (v===null || v===undefined || v==="") ? null : Number(v);
-        return {...x, 庫存量: stock};
+      const r=await fetch(fileName(y,m),{cache:"no-store"});
+      if(!r.ok)continue;
+      const rows=await r.json();
+      rows.forEach(x=>{
+        const code=x["藥代"];
+        let rec=rawData.find(r=>r.藥代===code);
+        if(!rec){
+          rec={藥代:code,藥品:x["藥品"],用量:0};
+          rawData.push(rec);
+        }
+        rec[`m${m}`]=Number(x["月用量"]||0);
       });
-    }catch(e){}
+    }catch{}
   }
+  render();
+}
 
-  function showMissingFiles(){
-    if(!missingFiles.length){
-      $("missingFilesPill").style.display = "none";
-      $("missingFilesPill").textContent = "";
-      return;
+function calcUsage(x){
+  let s=+$("startMonth").value,e=+$("endMonth").value,sum=0;
+  for(let i=s;i<=e;i++) sum+=x[`m${i}`]||0;
+  return sum;
+}
+
+function isOver(x){
+  if(manualLS[x.藥代])return true;
+  const u=calcUsage(x);
+  const st=stockLS[x.藥代];
+  return u>0 && st!=null && st>u*6;
+}
+
+/* ===== render ===== */
+function render(){
+  const tb=$("drugBody");tb.innerHTML="";
+  let overCnt=0,need=0,ok=0;
+  rawData.forEach(x=>{
+    const u=calcUsage(x);
+    const st=stockLS[x.藥代];
+    const over=isOver(x);
+    if(over)overCnt++;
+    if(st!=null && u>st)need++; else if(st!=null)ok++;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${x.藥代}</td>
+      <td>${x.藥品}</td>
+      <td>${u}</td>
+      <td>
+        <div class="stock-wrap">
+          <div class="stock-top">
+            <input type="number" value="${st??""}">
+            ${over?'<span class="tag tag-over">庫存過高</span>':(st==null?'<span class="tag tag-empty">未輸入</span>':'<span class="tag tag-ok">正常</span>')}
+          </div>
+          <input class="note-input" placeholder="備註" value="${noteLS[x.藥代]||""}">
+          <label><input type="checkbox" ${manualLS[x.藥代]?"checked":""}> 手動勿忘我</label>
+        </div>
+      </td>`;
+    const [stInp,noteInp,chk]=tr.querySelectorAll("input");
+    stInp.oninput=()=>{stockLS[x.藥代]=+stInp.value;setLS(STOCK_KEY,stockLS);render();}
+    noteInp.oninput=()=>{noteLS[x.藥代]=noteInp.value;setLS(NOTE_KEY,noteLS);}
+    chk.onchange=()=>{ if(!$("adminMode").checked){chk.checked=!!manualLS[x.藥代];return;}
+      chk.checked?manualLS[x.藥代]=1:delete manualLS[x.藥代];
+      setLS(MANUAL_KEY,manualLS);render();
     }
-    $("missingFilesPill").style.display = "inline-block";
-    $("missingFilesPill").textContent = `缺少月份檔：${missingFiles.join("、")}（缺的月份用量視為 0）`;
-  }
-
-  async function loadMonthlyFiles(){
-    const year = Number($("yearSelect").value);
-    missingFiles = [];
-
-    const tasks = [];
-    for(let m=1; m<=12; m++){
-      const fn = fileNameOf(year, m);
-      tasks.push(
-        fetch(fn, {cache:"no-store"}).then(r=>{
-          if(!r.ok) throw new Error(fn);
-          return r.json();
-        }).then(rows=>({month:m, rows}))
-        .catch(()=>{ missingFiles.push(`${m}月`); return null; })
-      );
-    }
-
-    const results = await Promise.all(tasks);
-    const ok = results.filter(Boolean);
-
-    rawData = mergeMonthlyData(year, ok);
-    restoreStock();
-
-    const keepAll = $("vendorSelect").value || "";
-    $("vendorSelect").innerHTML = `<option value="">全部</option>`;
-    [...new Set(rawData.map(x=>vendorKey(x.廠商)))].filter(v=>v).forEach(v=>{
-      const o = document.createElement("option");
-      o.value = v;
-      o.textContent = v;
-      $("vendorSelect").appendChild(o);
-    });
-    $("vendorSelect").value = keepAll;
-
-    showMissingFiles();
-    filter();
-  }
-
-  // ===== events =====
-  $("adminMode").addEventListener("change", ()=>{
-    document.body.classList.toggle("admin", $("adminMode").checked);
+    tb.appendChild(tr);
   });
 
-  $("searchInput").addEventListener("input", ()=>{
-    clearTimeout(window._t);
-    window._t = setTimeout(()=>{
-      filter();
-      if ($("needBuyOnly").checked) openBuyScreen();
-      if (isOverScreenOpen()) openOverScreen();
-    }, 200);
+  $("totalCount").textContent=`共 ${rawData.length}`;
+  $("needBuyCount").textContent=`需採購 ${need}`;
+  $("okCount").textContent=`正常 ${ok}`;
+  $("overCount").textContent=`勿忘我 ${overCnt}`;
+
+  if(overCnt){
+    $("overNotice").style.display="block";
+    $("overNotice").innerHTML=`🌸 勿忘我 ${overCnt} 筆｜點此查看`;
+  }else $("overNotice").style.display="none";
+}
+
+/* ===== events ===== */
+$("reloadBtn").onclick=loadData;
+$("resetBtn").onclick=()=>{ $("startMonth").value=$("endMonth").value=new Date().getMonth()+1; render(); }
+$("openOverBtn").onclick=()=>{ $("mainApp").style.display="none";$("overScreen").style.display="block";
+  const l=$("overList");l.innerHTML="";
+  rawData.filter(isOver).forEach(x=>{
+    const d=document.createElement("div");
+    d.className="line";
+    d.innerHTML=`${x.藥代} ${x.藥品} <span class="badge-over">庫存過高</span>`;
+    l.appendChild(d);
   });
+}
+$("backBtn").onclick=()=>{$("overScreen").style.display="none";$("mainApp").style.display="block";}
+$("overNotice").onclick=$("openOverBtn").onclick;
 
-  $("vendorSelect").addEventListener("change", ()=>{
-    filter();
-    if ($("needBuyOnly").checked) openBuyScreen();
-    if (isOverScreenOpen()) openOverScreen();
-  });
-
-  $("startMonth").addEventListener("change", ()=>{
-    filter();
-    if ($("needBuyOnly").checked) openBuyScreen();
-    if (isOverScreenOpen()) openOverScreen();
-  });
-
-  $("endMonth").addEventListener("change", ()=>{
-    filter();
-    if ($("needBuyOnly").checked) openBuyScreen();
-    if (isOverScreenOpen()) openOverScreen();
-  });
-
-  $("yearSelect").addEventListener("change", ()=>{
-    loadMonthlyFiles().catch(err=>{
-      console.error(err);
-      alert("載入月份檔失敗（請確認檔案命名與路徑）");
-    });
-  });
-
-  $("reloadBtn").addEventListener("click", ()=>{
-    loadMonthlyFiles().catch(err=>{
-      console.error(err);
-      alert("載入月份檔失敗（請確認檔案命名與路徑）");
-    });
-  });
-
-  $("needBuyOnly").addEventListener("change", ()=>{
-    filter();
-    if ($("needBuyOnly").checked) openBuyScreen();
-    else if (isBuyScreenOpen()) showMainPage();
-  });
-
-  $("openBuyScreenBtn").addEventListener("click", openBuyScreen);
-  $("backBtn").addEventListener("click", showMainPage);
-  $("saveCSVBtn").addEventListener("click", exportNeedBuyCSV);
-  $("saveJSONBtn").addEventListener("click", exportNeedBuyJSON);
-
-  $("openOverScreenBtn").addEventListener("click", openOverScreen);
-  $("overBackBtn").addEventListener("click", showMainPage);
-
-  $("resetBtn").addEventListener("click", ()=>{
-    $("vendorSelect").value = "";
-    $("searchInput").value = "";
-    $("needBuyOnly").checked = false;
-
-    const nowM = new Date().getMonth()+1;
-    $("startMonth").value = String(nowM);
-    $("endMonth").value = String(nowM);
-
-    filter();
-    if (isBuyScreenOpen() || isOverScreenOpen()) showMainPage();
-  });
-
-  $("emergencyBtn").addEventListener("click", ()=>{
-    $("emergencyModal").style.display = "flex";
-  });
-
-  document.addEventListener("keydown", (e)=>{
-    if(e.key === "Escape"){
-      $("emergencyModal").style.display = "none";
-      if(isBuyScreenOpen() || isOverScreenOpen()) showMainPage();
-    }
-  });
-
-  $("emergencyModal").addEventListener("click", (e)=>{
-    if(e.target.id === "emergencyModal") $("emergencyModal").style.display = "none";
-  });
-
-  // ===== start =====
-  initYearMonthUI();
-  loadMonthlyFiles().catch(err=>{
-    console.error(err);
-    alert("載入月份檔失敗：\n" + err.message + "\n\n可能原因：\n1) 直接用 file:// 開被擋 fetch\n2) 檔名不是 inventory_YYYY_MM.json\n3) 檔案不在同資料夾\n\n建議用 GitHub Pages 或本機伺服器開。");
-  });
+/* ===== start ===== */
+initYM();
+loadData();
 })();
 </script>
 </body>
