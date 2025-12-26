@@ -513,84 +513,159 @@ tr:nth-child(even) td{background:#f3f4f6}
 
   // ✅ 公告明細（含：改名/庫存/備註/刪除）
   function openAnnModal(){
-    $("annRule").textContent = "公告清單（手動公告 + 外部公告；不受月份切換影響）";
+  $("annRule").textContent = "公告清單（手動公告 + 外部公告；不受月份切換影響）";
 
-    const list=viewRows.filter(isAnn);
-    const tb=$("annBody"); tb.innerHTML="";
+  const tb = $("annBody");
+  tb.innerHTML = "";
 
-    list.forEach((r, idx)=>{
-      const code=r.藥代;
-      const showName = nameMap[code] ?? r.藥品;
-      const st=stock[code];
-      const note=notes[code] ?? "";
+  // ✅ 最上面：新增手動公告列（輸入藥代 → 一鍵加入）
+  const addTr = document.createElement("tr");
+  addTr.innerHTML = `
+    <td style="font-weight:900">＋</td>
+    <td colspan="3">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="annAddCode" placeholder="輸入藥代（例如 A00523）"
+               style="flex:1;min-width:220px;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
+        <button id="annAddBtn" class="btn2" style="padding:8px 14px;border-radius:999px;cursor:pointer">
+          ➕ 加入手動公告
+        </button>
+        <span class="small" style="white-space:nowrap">（不用回主清單勾選）</span>
+      </div>
+    </td>
+    <td>
+      <button id="annAddClose" class="btn3" style="padding:8px 14px;border-radius:999px;cursor:pointer">
+        關閉
+      </button>
+    </td>
+  `;
+  tb.appendChild(addTr);
 
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${idx+1}</td>
-        <td>
-          <input data-name="${code}" value="${String(showName).replace(/"/g,'&quot;')}"
-                 style="width:100%;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
-        </td>
-        <td>
-          <input data-stock="${code}" type="number" inputmode="numeric" value="${st ?? ""}"
-                 style="width:100%;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
-        </td>
-        <td>
-          <input data-note="${code}" value="${String(note).replace(/"/g,'&quot;')}"
-                 style="width:100%;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
-        </td>
-        <td>
-          <button class="btn2" data-del="${code}" style="padding:8px 14px;border-radius:999px;cursor:pointer">
-            🗑 刪除公告
-          </button>
-        </td>`;
-      tb.appendChild(tr);
+  // ✅ 下面：公告清單
+  const list = viewRows.filter(isAnn);
+
+  list.forEach((r, idx)=>{
+    const code=r.藥代;
+    const showName = nameMap[code] ?? r.藥品;
+    const st=stock[code];
+    const note=notes[code] ?? "";
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${idx+1}</td>
+      <td>
+        <input data-name="${code}" value="${String(showName).replace(/"/g,'&quot;')}"
+               style="width:100%;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
+      </td>
+      <td>
+        <input data-stock="${code}" type="number" inputmode="numeric" value="${st ?? ""}"
+               style="width:100%;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
+      </td>
+      <td>
+        <input data-note="${code}" value="${String(note).replace(/"/g,'&quot;')}"
+               style="width:100%;border-radius:10px;border:1px solid #d1d5db;padding:6px 10px">
+      </td>
+      <td>
+        <button class="btn2" data-del="${code}" style="padding:8px 14px;border-radius:999px;cursor:pointer">
+          🗑 刪除公告
+        </button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+
+  // ===== 綁定：新增手動公告 =====
+  const addCodeInp = document.getElementById("annAddCode");
+  const addBtn = document.getElementById("annAddBtn");
+  const closeBtn = document.getElementById("annAddClose");
+
+  const doAddManual = async ()=>{
+    const raw = (addCodeInp.value || "").trim();
+    const code = raw;           // 保留原樣 key
+    const ncode = normCode(raw);// 同步存大寫 key（你原本的 isManualAnn 會看兩種）
+    if(!raw){
+      alert("請先輸入藥代。");
+      addCodeInp.focus();
+      return;
+    }
+
+    // ✅ 找看看目前 rows 裡有沒有這個藥代
+    const existsInRows = rows.some(r => normCode(r.藥代) === ncode);
+
+    // 如果目前月份資料沒有這個藥代，也允許加入，但會提醒你
+    if(!existsInRows){
+      const ok = confirm("目前載入的清單裡找不到這個藥代。\n仍要加入手動公告嗎？（加入後可能不會顯示在本月清單）");
+      if(!ok) return;
+    }
+
+    // 寫入手動公告（兩種 key 都存）
+    manual[code] = 1;
+    manual[ncode] = 1;
+    localStorage.setItem(MAN, JSON.stringify(manual));
+
+    // 重新套用（公告 bar / 主表 / 公告清單都更新）
+    applyFilters();
+
+    // 清空輸入，並重新打開（確保序號/列表一致）
+    addCodeInp.value = "";
+    openAnnModal();
+  };
+
+  addBtn.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); doAddManual(); };
+  addCodeInp.addEventListener("keydown",(e)=>{
+    if(e.key === "Enter"){
+      e.preventDefault();
+      doAddManual();
+    }
+  });
+
+  closeBtn.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); $("modal").style.display="none"; };
+
+  // ===== 綁定：改名 / 庫存 / 備註 / 刪除 =====
+  tb.querySelectorAll("input[data-name]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const code=inp.getAttribute("data-name");
+      const v=(inp.value||"").trim();
+      if(v) nameMap[code]=v; else delete nameMap[code];
+      localStorage.setItem(NAME, JSON.stringify(nameMap));
+      applyFilters();
     });
+  });
 
-    tb.querySelectorAll("input[data-name]").forEach(inp=>{
-      inp.addEventListener("input", ()=>{
-        const code=inp.getAttribute("data-name");
-        const v=(inp.value||"").trim();
-        if(v) nameMap[code]=v; else delete nameMap[code];
-        localStorage.setItem(NAME, JSON.stringify(nameMap));
-        applyFilters();
-      });
+  tb.querySelectorAll("input[data-stock]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      inp.value=inp.value.replace(/\D/g,"");
+      const code=inp.getAttribute("data-stock");
+      const v=inp.value===""?null:+inp.value;
+      stock[code]=v;
+      localStorage.setItem(STOCK, JSON.stringify(stock));
+      applyFilters();
     });
+  });
 
-    tb.querySelectorAll("input[data-stock]").forEach(inp=>{
-      inp.addEventListener("input", ()=>{
-        inp.value=inp.value.replace(/\D/g,"");
-        const code=inp.getAttribute("data-stock");
-        const v=inp.value===""?null:+inp.value;
-        stock[code]=v;
-        localStorage.setItem(STOCK, JSON.stringify(stock));
-        applyFilters();
-      });
+  tb.querySelectorAll("input[data-note]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const code=inp.getAttribute("data-note");
+      notes[code]=inp.value;
+      localStorage.setItem(NOTE, JSON.stringify(notes));
+      applyFilters();
     });
+  });
 
-    tb.querySelectorAll("input[data-note]").forEach(inp=>{
-      inp.addEventListener("input", ()=>{
-        const code=inp.getAttribute("data-note");
-        notes[code]=inp.value;
-        localStorage.setItem(NOTE, JSON.stringify(notes));
-        applyFilters();
-      });
-    });
+  tb.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick=()=>{
+      const code=btn.getAttribute("data-del");
+      if(confirm(`確定要刪除公告：${code} ？`)){
+        deleteAnnounceByCode(code);
+        openAnnModal();
+      }
+    };
+  });
 
-    tb.querySelectorAll("[data-del]").forEach(btn=>{
-      btn.onclick=()=>{
-        const code=btn.getAttribute("data-del");
-        if(confirm(`確定要刪除公告：${code} ？`)){
-          deleteAnnounceByCode(code);
-          openAnnModal(); // 重新渲染
-        }
-      };
-    });
+  $("modal").style.display="flex";
 
-    $("modal").style.display="flex";
-  }
+  // ✅ 打開後直接 focus 在輸入框（超好用）
+  setTimeout(()=> addCodeInp?.focus(), 0);
+}
 
-  function closeModal(id){ $(id).style.display="none"; }
 
   // ✅ 需採購清單
   function openBuyModal(){
