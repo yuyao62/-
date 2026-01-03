@@ -290,6 +290,10 @@ tr:nth-child(even) td{background:#f3f4f6}
   let adminOn = localStorage.getItem(ADMIN)==="1";
   let rows = [], viewRows = [], vendorMap = new Map();
 
+  // ✅ 依 inventory_index.json 決定可選年月
+  let avail = new Map();      // year -> Set(month)
+  let availPairs = [];        // [{y,m}, ...] sorted
+
   const pad2 = (n)=>String(n).padStart(2,"0");
   const file = (y,m)=>`inventory_${y}_${pad2(m)}.json`;
 
@@ -330,18 +334,105 @@ tr:nth-child(even) td{background:#f3f4f6}
     el.classList.add("t1"); el.textContent="正常";
   }
 
-  function initSelects(){
-    const y=new Date().getFullYear();
-    $("year").innerHTML="";
-    $("year").appendChild(new Option(y,y,true,true));
+  // =========================
+  // ✅ inventory_index.json
+  // =========================
+  function buildAvailPairs(){
+    const pairs=[];
+    [...avail.keys()].sort((a,b)=>a-b).forEach(y=>{
+      const set=avail.get(y);
+      const months=set ? [...set].sort((a,b)=>a-b) : [];
+      months.forEach(m=>pairs.push({y:+y,m:+m}));
+    });
+    availPairs=pairs;
+  }
 
-    $("m1").innerHTML=""; $("m2").innerHTML="";
-    for(let i=1;i<=12;i++){
-      $("m1").appendChild(new Option(i,i));
-      $("m2").appendChild(new Option(i,i));
+  async function loadIndex(){
+    avail = new Map();
+    try{
+      const r = await fetch("inventory_index.json", {cache:"no-store"});
+      if(r.ok){
+        const idx = await r.json();
+        const arr = idx.months || [];
+        arr.forEach(s=>{
+          const m = String(s).match(/^(\d{4})-(\d{2})$/);
+          if(!m) return;
+          const y = +m[1], mo = +m[2];
+          if(!avail.has(y)) avail.set(y, new Set());
+          avail.get(y).add(mo);
+        });
+      }
+    }catch(e){
+      // ignore
     }
-    const m=new Date().getMonth()+1;
-    $("m1").value=m; $("m2").value=m;
+
+    // fallback：沒有 index 或 index 空 → 至少讓今年 1~12 可用
+    if(avail.size===0){
+      const y=new Date().getFullYear();
+      avail.set(y, new Set(Array.from({length:12},(_,i)=>i+1)));
+    }
+    buildAvailPairs();
+  }
+
+  function fillMonthsByYear(y){
+    const set = avail.get(+y);
+    const months = set ? [...set].sort((a,b)=>a-b) : Array.from({length:12},(_,i)=>i+1);
+
+    $("m1").innerHTML="";
+    $("m2").innerHTML="";
+    months.forEach(mm=>{
+      $("m1").appendChild(new Option(mm,mm));
+      $("m2").appendChild(new Option(mm,mm));
+    });
+
+    const last = months[months.length-1] || (new Date().getMonth()+1);
+    // 若目前值不在 options 中，改選最後一個
+    if(![...$("m1").options].some(o=>+o.value===+$("m1").value)) $("m1").value = last;
+    if(![...$("m2").options].some(o=>+o.value===+$("m2").value)) $("m2").value = last;
+
+    if(!$("adv").checked) $("m2").value = $("m1").value;
+  }
+
+  function setYM(y,m){
+    // 設年份
+    if(![...$("year").options].some(o=>+o.value===+y)){
+      // 若該年不在清單，改成最近的（取最後一個）
+      const ys=[...$("year").options].map(o=>+o.value);
+      y=ys.length?ys[ys.length-1]:y;
+    }
+    $("year").value = y;
+
+    // 依年份重建月份 options
+    fillMonthsByYear(y);
+
+    // 設月份
+    if([...$("m1").options].some(o=>+o.value===+m)) $("m1").value = m;
+    else{
+      // 若月份不存在，取該年最後一個月
+      const ms=[...$("m1").options].map(o=>+o.value);
+      $("m1").value = ms.length?ms[ms.length-1]:m;
+    }
+    if(!$("adv").checked) $("m2").value = $("m1").value;
+    else{
+      // adv 開啟時：若 m2 不存在，讓 m2=m1（避免區間無效）
+      if(![...$("m2").options].some(o=>+o.value===+$("m2").value)) $("m2").value = $("m1").value;
+    }
+  }
+
+  function initSelects(){
+    // years from avail
+    $("year").innerHTML="";
+    const years = [...avail.keys()].sort((a,b)=>a-b);
+    const fallbackYear = new Date().getFullYear();
+    if(years.length===0) years.push(fallbackYear);
+
+    years.forEach((yy,i)=>{
+      const isLast = (i===years.length-1);
+      $("year").appendChild(new Option(yy, yy, isLast, isLast));
+    });
+
+    // months by selected year
+    fillMonthsByYear($("year").value);
 
     $("adv").checked=false;
     $("advBox").style.display="none";
@@ -531,7 +622,6 @@ tr:nth-child(even) td{background:#f3f4f6}
       const n = normCode(code);
       return rows.find(r => normCode(r.藥代) === n) || null;
     };
-    const trunc10 = (s)=> String(s||"").slice(0,10);
 
     // --- 新增列（最上面） ---
     const addTr = document.createElement("tr");
@@ -912,12 +1002,47 @@ tr:nth-child(even) td{background:#f3f4f6}
     applyFilters();
   }
 
+  // ✅ 依 index 進行「上一月/下一月」切換（跨年也可）
   function shiftMonth(delta){
-    let m = +$("m1").value + delta;
-    if(m<1) m=12;
-    if(m>12) m=1;
-    $("m1").value = m;
-    if(!$("adv").checked) $("m2").value = m;
+    const y=+$("year").value;
+    const m=+$("m1").value;
+
+    // 找目前在 availPairs 的位置
+    let idx = availPairs.findIndex(p=>p.y===y && p.m===m);
+
+    // 若沒找到（例如你手動改壞了），就找最接近：同年最後一個月
+    if(idx<0){
+      const sameYear = availPairs.filter(p=>p.y===y);
+      if(sameYear.length){
+        const last = sameYear[sameYear.length-1];
+        setYM(last.y,last.m);
+        loadData();
+        return;
+      }
+      if(availPairs.length){
+        const last = availPairs[availPairs.length-1];
+        setYM(last.y,last.m);
+        loadData();
+        return;
+      }
+      // 真的沒資料：退回傳統 1~12
+      let mm = m + delta;
+      if(mm<1) mm=12;
+      if(mm>12) mm=1;
+      $("m1").value=mm;
+      if(!$("adv").checked) $("m2").value=mm;
+      loadData();
+      return;
+    }
+
+    let nidx = idx + delta;
+    if(nidx<0) nidx = availPairs.length-1;
+    if(nidx>=availPairs.length) nidx = 0;
+
+    const next = availPairs[nidx];
+    setYM(next.y, next.m);
+
+    // adv 開啟但 m2 不存在會被 setYM 修正
     loadData();
   }
 
@@ -928,17 +1053,28 @@ tr:nth-child(even) td{background:#f3f4f6}
       loadData();
     });
 
-    $("year").addEventListener("change", loadData);
+    $("year").addEventListener("change", ()=>{
+      fillMonthsByYear($("year").value);
+      loadData();
+    });
+
     $("m1").addEventListener("change", ()=>{
       if(!$("adv").checked) $("m2").value = $("m1").value;
       loadData();
     });
+
     $("m2").addEventListener("change", loadData);
 
     $("pm").onclick=()=>shiftMonth(-1);
     $("nm").onclick=()=>shiftMonth(+1);
 
-    $("reload").onclick=loadData;
+    $("reload").onclick=async ()=>{
+      // 重新載入：同時刷新 index（新增/刪除 json 檔時很有用）
+      await loadIndex();
+      initSelects();
+      loadData();
+    };
+
     $("reset").onclick=resetUI;
 
     $("vendorSel").addEventListener("change", applyFilters);
@@ -982,9 +1118,14 @@ tr:nth-child(even) td{background:#f3f4f6}
     $("vdClear").onclick=()=>{ $("vdSearch").value=""; renderVendorDrugs(); };
   }
 
-  initSelects();
-  bindEvents();
-  loadData();
+  // ✅ 啟動：先讀 index → 再初始化 → 再載入資料
+  (async ()=>{
+    await loadIndex();
+    initSelects();
+    bindEvents();
+    loadData();
+  })();
+
 })();
 </script>
 </body>
