@@ -15,6 +15,7 @@ h1{margin:0 0 6px;text-align:center}
 label{font-weight:900}
 input,select,button{font-size:16px;padding:8px 12px;border-radius:999px;border:1px solid #d1d5db}
 button{border:none;background:#4f46e5;color:#fff;font-weight:900;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
 .btn2{background:#111827}.btn3{background:#e5e7eb;color:#111827}.btn4{background:#374151}
 .pill{padding:4px 12px;border-radius:999px;font-size:14px;font-weight:900}
 .p1{background:#dbeafe}.p2{background:#fee2e2;color:#991b1b}.p3{background:#dcfce7;color:#166534}.p4{background:#ede9fe;color:#4c1d95}
@@ -106,14 +107,8 @@ tr:nth-child(even) td{background:#f3f4f6}
   .mainTable td:nth-child(3)::before{content:"用量";}
   .mainTable td:nth-child(4)::before{content:"庫存 / 公告";}
 
-  /* 手機上控制項排版更順 */
-  .mainTable .stockTop{
-    gap:8px;
-  }
-  .mainTable .stockTop input[type="number"]{
-    width:140px;
-    max-width:100%;
-  }
+  .mainTable .stockTop{gap:8px;}
+  .mainTable .stockTop input[type="number"]{width:140px;max-width:100%;}
   .note{font-size:14px}
 }
 
@@ -138,6 +133,8 @@ tr:nth-child(even) td{background:#f3f4f6}
 <div class="app">
   <h1>藥品採購查詢系統</h1>
   <div class="sub">每月一檔 inventory_YYYY_MM.json（單月為主，支援進階多月）</div>
+  <!-- ✅ 顯示「實際載入月份」 -->
+  <div class="sub" id="loadInfo" style="font-weight:900;color:#374151"></div>
 
   <!-- ✅ 直接點上方公告進入公告明細 -->
   <div id="announceBar" class="announceBar"></div>
@@ -334,6 +331,28 @@ tr:nth-child(even) td{background:#f3f4f6}
     el.classList.add("t1"); el.textContent="正常";
   }
 
+  // ✅ 顯示「實際載入月份」＆ Console debug
+  function renderLoadInfo(loadedFiles, missingFiles){
+    const el = $("loadInfo");
+    if(!el) return;
+
+    const ok = loadedFiles.length;
+    const miss = missingFiles.length;
+
+    const pretty = (fn)=>{
+      // inventory_2025_09.json -> 2025/09
+      const m = String(fn).match(/inventory_(\d{4})_(\d{2})\.json$/);
+      if(!m) return fn;
+      return `${m[1]}/${m[2]}`;
+    };
+
+    const rangeText = ok ? `｜${pretty(loadedFiles[0])} → ${pretty(loadedFiles[ok-1])}` : "";
+    el.textContent = `✅ 已載入 ${ok} 個月資料${miss ? `（缺 ${miss} 個月檔案）` : ""}${rangeText}`;
+
+    console.log("[loadData] loadedFiles:", loadedFiles);
+    if(missingFiles.length) console.warn("[loadData] missingFiles:", missingFiles);
+  }
+
   // =========================
   // ✅ inventory_index.json
   // =========================
@@ -353,9 +372,10 @@ tr:nth-child(even) td{background:#f3f4f6}
       const r = await fetch("inventory_index.json", {cache:"no-store"});
       if(r.ok){
         const idx = await r.json();
-        const arr = idx.months || [];
+        // ✅ 同時支援 months / 「月」
+        const arr = idx.months || idx["月"] || idx["months"] || [];
         arr.forEach(s=>{
-          const m = String(s).match(/^(\d{4})-(\d{2})$/);
+          const m = String(s).trim().match(/^(\d{4})-(\d{2})$/);
           if(!m) return;
           const y = +m[1], mo = +m[2];
           if(!avail.has(y)) avail.set(y, new Set());
@@ -386,7 +406,6 @@ tr:nth-child(even) td{background:#f3f4f6}
     });
 
     const last = months[months.length-1] || (new Date().getMonth()+1);
-    // 若目前值不在 options 中，改選最後一個
     if(![...$("m1").options].some(o=>+o.value===+$("m1").value)) $("m1").value = last;
     if(![...$("m2").options].some(o=>+o.value===+$("m2").value)) $("m2").value = last;
 
@@ -394,33 +413,26 @@ tr:nth-child(even) td{background:#f3f4f6}
   }
 
   function setYM(y,m){
-    // 設年份
     if(![...$("year").options].some(o=>+o.value===+y)){
-      // 若該年不在清單，改成最近的（取最後一個）
       const ys=[...$("year").options].map(o=>+o.value);
       y=ys.length?ys[ys.length-1]:y;
     }
     $("year").value = y;
 
-    // 依年份重建月份 options
     fillMonthsByYear(y);
 
-    // 設月份
     if([...$("m1").options].some(o=>+o.value===+m)) $("m1").value = m;
     else{
-      // 若月份不存在，取該年最後一個月
       const ms=[...$("m1").options].map(o=>+o.value);
       $("m1").value = ms.length?ms[ms.length-1]:m;
     }
     if(!$("adv").checked) $("m2").value = $("m1").value;
     else{
-      // adv 開啟時：若 m2 不存在，讓 m2=m1（避免區間無效）
       if(![...$("m2").options].some(o=>+o.value===+$("m2").value)) $("m2").value = $("m1").value;
     }
   }
 
   function initSelects(){
-    // years from avail
     $("year").innerHTML="";
     const years = [...avail.keys()].sort((a,b)=>a-b);
     const fallbackYear = new Date().getFullYear();
@@ -431,7 +443,6 @@ tr:nth-child(even) td{background:#f3f4f6}
       $("year").appendChild(new Option(yy, yy, isLast, isLast));
     });
 
-    // months by selected year
     fillMonthsByYear($("year").value);
 
     $("adv").checked=false;
@@ -447,15 +458,27 @@ tr:nth-child(even) td{background:#f3f4f6}
     const adv=$("adv").checked;
     const a=+$("m1").value, b=adv?+$("m2").value:a;
     const s=Math.min(a,b), e=Math.max(a,b);
-    const monthCount=(e-s+1);
 
     const agg=new Map();
 
+    // ✅ 強化：記錄實際成功載入的月份（避免缺檔造成平均被稀釋）
+    const loadedFiles = [];
+    const missingFiles = [];
+    let loadedMonths = 0;
+
     for(let m=s;m<=e;m++){
       try{
-        const r=await fetch(file(y,m),{cache:"no-store"});
-        if(!r.ok) continue;
+        const fn = file(y,m);
+        const r=await fetch(fn,{cache:"no-store"});
+        if(!r.ok){
+          missingFiles.push(fn);
+          continue;
+        }
         const list=await r.json();
+
+        loadedMonths++;
+        loadedFiles.push(fn);
+
         list.forEach(x=>{
           const code=x["藥代"];
           const name=x["藥品"];
@@ -465,6 +488,9 @@ tr:nth-child(even) td{background:#f3f4f6}
         });
       }catch(e){}
     }
+
+    // ✅ 平均改成用「實際載入月數」
+    const monthCount = Math.max(1, loadedMonths);
 
     rows=[...agg.values()].map(x=>{
       const avg = monthCount>0 ? (x.sum/monthCount) : 0;
@@ -485,6 +511,7 @@ tr:nth-child(even) td{background:#f3f4f6}
 
     buildVendorDropdown();
     applyFilters();
+    renderLoadInfo(loadedFiles, missingFiles);
   }
 
   function buildVendorDropdown(){
@@ -695,17 +722,13 @@ tr:nth-child(even) td{background:#f3f4f6}
       }
 
       const codeShow = normCode(raw);
-
-      // ✅ 先顯示藥代（不管有沒有找到藥品）
       addInfo.textContent = codeShow;
 
       const r = findRowByCode(raw);
       if(r){
         const fullName = (nameMap[r.藥代] ?? r.藥品) || "";
-        // ✅ 找到藥品就補上「/ 藥名(10碼)」
         addInfo.textContent = `${codeShow} / ${String(fullName).slice(0,10)}`;
 
-        // 帶入既有庫存/備註
         const st = stock[r.藥代];
         const nt = notes[r.藥代] ?? "";
         addStockInp.value = (st==null ? "" : String(st));
@@ -727,19 +750,16 @@ tr:nth-child(even) td{background:#f3f4f6}
       const codeKey = r ? r.藥代 : raw;
       const ncode   = normCode(codeKey);
 
-      // 手動公告
       manual[codeKey] = 1;
       manual[ncode] = 1;
       localStorage.setItem(MAN, JSON.stringify(manual));
 
-      // 庫存（可空）
       const stStr = String(addStockInp.value||"").replace(/\D/g,"");
       const stVal = stStr==="" ? null : +stStr;
       stock[codeKey] = stVal;
       stock[ncode] = stVal;
       localStorage.setItem(STOCK, JSON.stringify(stock));
 
-      // 備註
       const ntVal = addNoteInp.value || "";
       notes[codeKey] = ntVal;
       notes[ncode] = ntVal;
@@ -747,7 +767,6 @@ tr:nth-child(even) td{background:#f3f4f6}
 
       applyFilters();
 
-      // 清空並刷新
       addCodeInp.value = "";
       addStockInp.value = "";
       addNoteInp.value = "";
@@ -762,7 +781,6 @@ tr:nth-child(even) td{background:#f3f4f6}
 
     closeBtn.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); $("modal").style.display="none"; };
 
-    // 改名/庫存/備註/刪除
     tb.querySelectorAll("input[data-name]").forEach(inp=>{
       inp.addEventListener("input", ()=>{
         const code=inp.getAttribute("data-name");
@@ -1007,10 +1025,8 @@ tr:nth-child(even) td{background:#f3f4f6}
     const y=+$("year").value;
     const m=+$("m1").value;
 
-    // 找目前在 availPairs 的位置
     let idx = availPairs.findIndex(p=>p.y===y && p.m===m);
 
-    // 若沒找到（例如你手動改壞了），就找最接近：同年最後一個月
     if(idx<0){
       const sameYear = availPairs.filter(p=>p.y===y);
       if(sameYear.length){
@@ -1025,7 +1041,6 @@ tr:nth-child(even) td{background:#f3f4f6}
         loadData();
         return;
       }
-      // 真的沒資料：退回傳統 1~12
       let mm = m + delta;
       if(mm<1) mm=12;
       if(mm>12) mm=1;
@@ -1041,8 +1056,6 @@ tr:nth-child(even) td{background:#f3f4f6}
 
     const next = availPairs[nidx];
     setYM(next.y, next.m);
-
-    // adv 開啟但 m2 不存在會被 setYM 修正
     loadData();
   }
 
@@ -1069,7 +1082,6 @@ tr:nth-child(even) td{background:#f3f4f6}
     $("nm").onclick=()=>shiftMonth(+1);
 
     $("reload").onclick=async ()=>{
-      // 重新載入：同時刷新 index（新增/刪除 json 檔時很有用）
       await loadIndex();
       initSelects();
       loadData();
@@ -1125,8 +1137,8 @@ tr:nth-child(even) td{background:#f3f4f6}
     bindEvents();
     loadData();
   })();
-
 })();
 </script>
 </body>
 </html>
+
