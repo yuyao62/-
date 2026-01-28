@@ -146,27 +146,27 @@ tr:nth-child(even) td{background:#f3f4f6}
 }
 .small{font-size:13px;color:#6b7280}
 
-/* ===== 公告表 iPhone：一藥一行（截圖用） ===== */
+/* ===== iPhone 修正：藥代 input 被裁掉 ===== */
 @media (max-width:520px){
 
-  .table-wrap{
-    overflow-x:hidden;
-  }
-
-  .annTable{
+  /* 藥代那一欄的 input */
+  .annTable td:nth-child(2) input{
     width:100%;
-    table-layout:fixed;
+    overflow: visible;
+    text-overflow: initial;
+    white-space: normal;        /* 允許換行 */
+    line-height: 1.25;
+    height: auto;               /* 不鎖高度 */
+    min-height: 34px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 
-  .annTable th,
-  .annTable td{
-    padding:4px 6px;
-    font-size:13px;
-    line-height:1.25;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+  /* iOS Safari 特別需要 */
+  .annTable input{
+    -webkit-text-size-adjust: 100%;
   }
+}
 
   /* 藥代 + 藥品（最重要，給最多空間） */
   .annTable th:nth-child(2),
