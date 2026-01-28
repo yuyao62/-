@@ -146,21 +146,45 @@ tr:nth-child(even) td{background:#f3f4f6}
 }
 .small{font-size:13px;color:#6b7280}
 
-/* ===== iPhone 修正：藥代 input 被裁掉 ===== */
+/* =========================
+   手機最終修正：隱藏重複欄位標題，顯示真正內容
+   ========================= */
 @media (max-width:520px){
 
-  /* 藥代那一欄的 input */
-  .annTable td:nth-child(2) input{
-    width:100%;
-    overflow: visible;
-    text-overflow: initial;
-    white-space: normal;        /* 允許換行 */
-    line-height: 1.25;
-    height: auto;               /* 不鎖高度 */
-    min-height: 34px;
-    padding-top: 6px;
-    padding-bottom: 6px;
+  /* 1️⃣ 完全隱藏原本表頭文字 */
+  .annTable thead,
+  .annTable th{
+    display:none !important;
   }
+
+  /* 2️⃣ 隱藏 td 裡原本的欄位名稱文字（序號/內容/庫存/備註/操作） */
+  .annTable td{
+    font-size:13px;
+    color:#111827;
+  }
+
+  /* 3️⃣ 第一欄（序號）縮小，不要搶版面 */
+  .annTable td:nth-child(1){
+    font-size:12px;
+    color:#6b7280;
+  }
+
+  /* 4️⃣ 內容（藥代 / 公告文字）一定要顯示 */
+  .annTable td:nth-child(2),
+  .annTable td:nth-child(2) input{
+    font-size:14px;
+    font-weight:900;
+    white-space:normal;
+    word-break:break-word;
+  }
+
+  /* 5️⃣ iOS Safari input 顯示完整文字 */
+  .annTable td:nth-child(2) input{
+    height:auto;
+    min-height:36px;
+    overflow:visible;
+  }
+}
 
   /* iOS Safari 特別需要 */
   .annTable input{
