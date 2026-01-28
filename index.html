@@ -192,26 +192,24 @@ tr:nth-child(even) td{background:#f3f4f6}
   .mainTable td:nth-child(4)::before{content:"庫存 / 公告"}
 }
 
-/* ===== 手機：公告卡片「操作」按鈕不要滿版 ===== */
+/* ===== 修正：手機公告卡片「藥代內容消失」 ===== */
 @media (max-width:520px){
 
-  /* 只針對操作那一格 */
-  .annTable td:nth-child(5){
-    display:flex;
-    gap:6px;
-    align-items:center;
+  /* 強制讓藥代內容顯示 */
+  .annTable td:nth-child(1){
+    font-weight:900;
+    color:#111827;
   }
 
-  /* 操作按鈕改成小顆 */
-  .annTable td:nth-child(5) button{
-    width:auto !important;   /* 取消 100% */
-    flex:0 0 auto;
-    padding:6px 10px;
-    font-size:12px;
-    border-radius:999px;
-    white-space:nowrap;
+  /* 避免內容被 ::before 擠掉 */
+  .annTable td:nth-child(1)::after{
+    content: attr(data-value);
+    display:block;
+    font-size:14px;
+    margin-top:2px;
   }
 }
+
 
 </style>
 
