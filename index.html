@@ -192,46 +192,24 @@ tr:nth-child(even) td{background:#f3f4f6}
   .mainTable td:nth-child(4)::before{content:"庫存 / 公告"}
 }
 
-/* ===== 手機：公告卡片更緊湊（字更小、間距更小） ===== */
+/* ===== 手機：公告卡片「操作」按鈕不要滿版 ===== */
 @media (max-width:520px){
 
-  /* 整體字體縮小 */
-  .boxHead h3{font-size:16px}
-  .boxSub{font-size:12px}
-  .small{font-size:12px}
-
-  /* 卡片間距縮小，讓一頁塞更多 */
-  .annTable tr{
-    padding:8px;
-    margin-bottom:8px;
+  /* 只針對操作那一格 */
+  .annTable td:nth-child(5){
+    display:flex;
+    gap:6px;
+    align-items:center;
   }
 
-  .annTable td{
-    padding:4px 0;
-  }
-
-  .annTable td::before{
-    font-size:11px;
-    margin-bottom:2px;
-  }
-
-  /* 讓 input / button 更小但仍好按 */
-  .annTable input{
-    font-size:12px;
-    padding:6px 8px;
-    border-radius:10px;
-  }
-  .annTable button{
-    font-size:12px;
+  /* 操作按鈕改成小顆 */
+  .annTable td:nth-child(5) button{
+    width:auto !important;   /* 取消 100% */
+    flex:0 0 auto;
     padding:6px 10px;
-    border-radius:10px;
-  }
-
-  /* Modal 內可捲動（上下捲），避免整頁擠爆 */
-  .box .table-wrap{
-    max-height:70vh;
-    overflow-y:auto;
-    overflow-x:hidden;
+    font-size:12px;
+    border-radius:999px;
+    white-space:nowrap;
   }
 }
 
