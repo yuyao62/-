@@ -200,7 +200,46 @@ tr:nth-child(even) td{background:#f3f4f6}
     min-height:20px !important;
   }
 }
+/* =====================================
+   手機：公告 Modal 近乎滿版（更好用）
+   ===================================== */
+@media (max-width:520px){
 
+  /* 讓遮罩內的容器更滿版 */
+  .modal{
+    padding: 0 !important;                 /* 取消四周大留白 */
+    align-items: flex-end !important;      /* 靠下（更像 sheet） */
+  }
+
+  /* 盒子本體：幾乎滿寬、滿高 */
+  .box{
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    border-radius: 18px 18px 0 0 !important; /* 上圓下直 */
+    padding: 12px !important;
+    margin: 0 !important;
+  }
+
+  /* 內容區只上下捲，不要左右捲 */
+  .box .table-wrap{
+    max-height: calc(92vh - 140px) !important; /* 依你 boxHead 高度微調 */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 上方按鈕區更緊湊 */
+  .boxHead{
+    gap: 8px !important;
+  }
+
+  /* 匯出/關閉按鈕不要太肥 */
+  .boxHead button{
+    padding: 8px 12px !important;
+    border-radius: 999px !important;
+  }
+}
 </style>
 
 </head>
