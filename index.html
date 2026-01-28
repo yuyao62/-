@@ -168,7 +168,15 @@ tr:nth-child(even) td{background:#f3f4f6}
     padding-left:6px !important;
   }
 }
+/* =========================
+   手機：行距再壓縮（最終緊密版）
+   ========================= */
+@media (max-width:520px){
 
+  /* 每一行本體再縮 */
+  .annTable tr{
+    padding:2px 6px !important;   /* 原本 4~6px → 2px */
+    gap:4px !important;
 
 /* =========================
    手機：徹底隱藏公告表頭（避免直排）
